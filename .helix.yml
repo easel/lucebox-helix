@@ -1,0 +1,6 @@
+version: 1
+flows:
+  - id: helix
+    root: docs/helix/
+autonomy:
+  default: guided
