@@ -26,7 +26,7 @@ ddx:
 
 ## Decision
 
-We will use C++17 as the inference engine language, Python/uv as the CLI and harness adapter language, and POSIX shell as the system-level wrapper (`lucebox.sh`). Go is the designated escalation path if shell complexity outgrows what is maintainable. TypeScript/Bun is reserved for the v2 web UI only and is not active for v1.
+We will use C++17 as the inference engine language, Python/uv as the CLI and harness adapter language, and POSIX shell as the system-level wrapper (`lucebox.sh`). Go is the designated escalation path if shell complexity outgrows what is maintainable. Web UI framework selection is deferred to ADR-004.
 
 **Key Points**: Three-layer stack (C++ → Python → Shell) maps cleanly to three scopes (engine, tooling, orchestration) | Python/uv was chosen in PR #334/#335 and is already evidenced by 10,500+ LOC | Shell/Go porcelain boundary is explicit — Go is a named future option, not a speculation
 
@@ -46,7 +46,7 @@ We will use C++17 as the inference engine language, Python/uv as the CLI and har
 |------|--------|
 | Positive | Inference engine can use CUDA/HIP intrinsics without a FFI layer; Python CLI integrates naturally with AI tool ecosystems; shell wrapper handles systemd/Docker without language overhead |
 | Negative | Users need Python on the host (mitigated by `install.sh` bootstrap); three languages increase contributor ramp-up; shell code has weak type safety |
-| Neutral | TypeScript/Bun remains the anticipated choice for the v2 web UI when that scope opens; this ADR does not prejudice that decision |
+| Neutral | A SPA framework (see ADR-004 when v2 begins) is the anticipated choice for the web UI; this ADR does not prejudice that decision |
 
 ## Risks
 
@@ -65,13 +65,13 @@ We will use C++17 as the inference engine language, Python/uv as the CLI and har
 
 ## Supersession
 
-- **Supersedes**: None (overrides the `typescript-bun` HELIX default, which was never an intentional decision)
+- **Supersedes**: None
 - **Superseded by**: None
 
 ## Concern Impact
 
-- **Concern selection**: This ADR changes the `language-runtime` slot from `typescript-bun` (boilerplate default) to `python-uv`. Update `concerns.md` Active Concerns and Slot Decisions accordingly.
-- **Practice override**: `typescript-bun` practices (Bun test runner, Bun APIs) do not apply to any v1 area. TypeScript/Bun is scoped to `area:ui` only, and only when v2 web UI work begins.
+- **Concern selection**: The `language-runtime` slot is `python-uv` (v1 CLI/harness) + C++17 (inference engine). See `concerns.md` slot decisions.
+- **Practice note**: Web UI language/framework is out of scope for this ADR; see ADR-004 when v2 begins.
 
 ## References
 
