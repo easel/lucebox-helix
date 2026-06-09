@@ -13,16 +13,15 @@ ddx:
 **Status**: Draft
 **Priority**: P0
 **Owner**: Core Engine Team
-**Covered PRD Subsystem(s)**: Inference Server
-**Covered PRD Requirements**: FR-2, FR-4, P2-DFlash
+**Covered PRD Subsystem(s)**: Inference Engine
+**Covered PRD Requirements**: FEAT-001 (Inference Engine)
 **Cross-Subsystem Rationale**: None — single subsystem.
 
 ## Overview
 
 The Inference Engine is the C++17 core that loads, manages, and executes LLM
-inference on validated GPU hardware. It implements PRD FR-2 (≥120 tok/s
-sustained on Qwen3.6-27B Q4_K_M on the reference hardware profile) and FR-4
-(128K context window on Qwen3.6-27B without OOM). The engine is not
+inference on validated GPU hardware. It is the primary subject of FEAT-001 and
+the sole source of inference capability for the product. The engine is not
 user-facing; the Inference Server (FEAT-002) wraps it and exposes the
 OpenAI-compatible API. All performance optimization techniques (DFlash,
 PFlash, DDTree, Megakernel) are capabilities of this engine, each with a
@@ -116,6 +115,17 @@ up to 128K tokens do not cause OOM.
 ENG-08. Kernel dispatch selects custom GPU kernels appropriate to the active
 hardware profile. See hardware profile technical design docs (to be written,
 one per validated profile).
+
+ENG-08a. On the Strix Halo + RTX 3090 reference configuration, the engine
+distributes model layer weights across the RTX 3090 VRAM (24 GB) and the
+Strix Halo unified system memory (128 GB LPDDR5X), using the combined memory
+envelope to support larger models and longer context windows than RTX 3090
+VRAM alone permits. Compute executes on the RTX 3090 CUDA path; the Strix Halo
+unified memory functions as a layer-weight offload pool. The exact allocation
+policy is specified in the hardware profile technical design doc for the
+reference configuration. [Note: the precise boundary between what runs on-VRAM
+vs. what offloads is an open architectural detail pending TD authoring — this
+requirement captures the PRD P0 intent.]
 
 #### Optimization Techniques
 
@@ -272,8 +282,7 @@ FEAT-002.
   TD-004-megakernel (all to be written) govern the design and acceptance
   criteria of the four optimization techniques. Hardware profile TDs (one per
   validated profile, to be written) govern kernel dispatch per profile.
-- **PRD requirements**: FR-2 (throughput target), FR-4 (128K context), P2-DFlash
-  (DFlash speculative decoding).
+- **PRD requirements**: FEAT-001 (Inference Engine) — throughput target, 128K context window, multi-GPU layer split, all four optimization techniques.
 - **External**: CUDA 12.x on NVIDIA hardware; HIP 7 on AMD hardware. The engine
   does not depend on any higher-level inference library at the kernel dispatch
   layer.
@@ -286,9 +295,9 @@ FEAT-002.
   details — these belong in the TD docs referenced above.
 - Non-GGUF model formats (safetensors, PyTorch checkpoint, ONNX).
 - CPU-only inference fallback path.
-- Multi-GPU inference (more than one GPU per inference request).
+- Symmetric multi-GPU compute parallelism (tensor/pipeline parallelism sharding one request across multiple identical GPUs for compute acceleration). The Strix Halo + RTX 3090 layer split (ENG-08a) is a memory allocation strategy, not compute parallelism, and is in scope.
 - Fine-tuning, training, or weight adaptation.
 - Windows and macOS support.
 - Cloud-hosted or hybrid inference modes.
 - Any hardware profile not listed in ENG-05.
-- The management UI (v2, out of scope for v1 entirely).
+- The management UI — covered by FEAT-005.

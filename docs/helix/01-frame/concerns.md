@@ -17,7 +17,7 @@ are not principles, requirements, ADRs, test plans, or implementation tasks.
 | Concern | Source | Areas | Why Active | Key Practices |
 |---------|--------|-------|------------|---------------|
 | `python-uv` | ADR-002 (language-runtime slot) | `area:cli` `area:inference` | CLI (`lucebox` Typer app) and harness adapters are Python/uv; C++ owns the inference engine; shell (`lucebox.sh`) owns systemd/Docker orchestration | Manage dependencies with uv; lint with Ruff; test with pytest; do not use Bun or Node for CLI/harness layers |
-| `spa-framework` | ADR-004 pending (frontend-framework slot) | `area:ui` | v2 management UI is a SPA that consumes the C++ inference API directly — no Node.js server process; framework TBD (SvelteKit static adapter or Svelte+Vite is the leading candidate) | SPA talks directly to C++ `/v1` API; serve static assets from the C++ server or a simple file server; no SSR required; evaluate SvelteKit (adapter-static) vs. Svelte+Vite before v2 begins |
+| `spa-framework` | ADR-004 pending (frontend-framework slot) | `area:ui` | The management UI is a SPA that consumes the C++ inference API directly — no Node.js server process; framework TBD (SvelteKit static adapter or Svelte+Vite is the leading candidate) | SPA talks directly to C++ `/v1` API; serve static assets from the C++ server or a simple file server; no SSR required; evaluate SvelteKit (adapter-static) vs. Svelte+Vite before UI work begins |
 | `e2e-playwright` | library (e2e-framework slot) | `area:ui` | Operator-facing UI must have ≥1 whole-stack e2e covering the core model-pull-and-serve flow | Browser e2e via Playwright; at least the model-pull → inference-endpoint happy path must run green |
 | `auth-local-sessions` | library (auth-provider slot) | `area:ui` `area:api` | Local appliance; single-user at beachhead but needs basic session protection for the management UI | Cookie-based sessions; no cloud identity dependency; password set on first boot |
 | `admin-console` | library | `area:ui` | Management UI is operator-facing: users manage model library, server config, running inference tasks — mutable domain objects with lifecycle state | Core operator workflows (pull model, configure endpoint, monitor inference, pause/cancel job) must be exercised through the UI end-to-end |
@@ -32,14 +32,14 @@ are not principles, requirements, ADRs, test plans, or implementation tasks.
 | Concern | Practice | Override | Authority |
 |---------|----------|----------|-----------|
 | `deploy-target:local-appliance` | (no shipped library concern — project-local) | Deploy to physical box via tested update bundle; inference daemon in Docker container, not bare systemd service | ADR-003 |
-| `auth-local-sessions` | Multi-tenant auth flows | Single-user at beachhead; no tenant isolation or role hierarchy required at v1 | Needs ADR |
+| `auth-local-sessions` | Multi-tenant auth flows | Single-user at beachhead; no tenant isolation or role hierarchy required at launch | Needs ADR |
 
 ## Slot Decisions
 
 | Slot | Chosen Filler | Source |
 |------|--------------|--------|
-| `frontend-framework` | TBD — SPA (SvelteKit static or Svelte+Vite is the leading candidate) | ADR-004 pending; no Node.js server process in v2 architecture |
-| `language-runtime` | `python-uv` (v1 CLI/harness); C++17 (inference engine) | ADR-002 — shipped default (`typescript-bun`) was boilerplate, not intentional |
+| `frontend-framework` | TBD — SPA (SvelteKit static or Svelte+Vite is the leading candidate) | ADR-004 pending; no Node.js server process |
+| `language-runtime` | `python-uv` (CLI/harness); C++17 (inference engine) | ADR-002 — shipped default (`typescript-bun`) was boilerplate, not intentional |
 | `e2e-framework` | `e2e-playwright` | shipped default |
 | `auth-provider` | `auth-local-sessions` | shipped default |
 | `deploy-target` | `local-appliance` (project-local) | assumption — Lucebox is a physical box, not a cloud service |

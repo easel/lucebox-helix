@@ -14,12 +14,12 @@ ddx:
 **Priority**: P0
 **Owner**: Platform Team
 **Covered PRD Subsystem(s)**: Hardware Compatibility; Software Distribution
-**Covered PRD Requirements**: FR-11, FR-12, FR-13, FR-18, FR-19, FR-20
+**Covered PRD Requirements**: FEAT-003 (Installation and Tuning)
 **Cross-Subsystem Rationale**: Installation and hardware compatibility are the same user journey — a user who fails host compatibility checking cannot install, and a user who installs without checking will hit the same failures later. Splitting these would produce two features neither of which can ship independently.
 
 ## Overview
 
-This feature covers the complete journey from bare hardware to a tuned, running inference server: validating host prerequisites, installing the Lucebox software stack, pulling the inference container image, registering the boot service, and running autotune to write an optimized configuration. It implements PRD FR-11, FR-12, FR-13 (host compatibility checking), FR-18, FR-19, and FR-20 (software distribution and service registration). The journey is intentionally unified — install and tune are sequential steps of one capability, not two.
+This feature covers the complete journey from bare hardware to a tuned, running inference server: validating host prerequisites, installing the Lucebox software stack, pulling the inference container image, registering the boot service, and running autotune to write an optimized configuration. The journey is intentionally unified — install and tune are sequential steps of one capability, not two.
 
 ## Ideal Future State
 
@@ -171,7 +171,7 @@ When this feature is working well:
 - **Other features**: FEAT-004 (Model Management) — day-to-day model pull, list, and delete are out of scope here; the container image pull in this feature fetches the runtime image, not a model. FEAT-005 (Harness Setup) — harness adapter configuration begins after the server is running, which this feature delivers.
 - **External systems**: GitHub Container Registry (`ghcr.io/luce-org/lucebox-hub`) for the container image; GitHub raw content (`raw.githubusercontent.com/Luce-Org/lucebox-hub/main/install.sh`) for the bootstrap script.
 - **Host prerequisites**: Docker daemon, NVIDIA driver ≥ r525, NVIDIA Container Toolkit, systemd — all must be present on the host before install proceeds; none are installed by this feature.
-- **PRD requirements**: FR-11, FR-12, FR-13 (host compatibility checking); FR-18, FR-19, FR-20 (software distribution and boot service).
+- **PRD requirements**: FEAT-003 (Installation and Tuning) — host compatibility checking, software distribution, Docker setup, boot service, and autotune.
 
 ## Out of Scope
 
@@ -180,7 +180,7 @@ When this feature is working well:
 - Installing or upgrading the Docker daemon, NVIDIA driver, or NVIDIA Container Toolkit. This feature gates on their presence; it does not provision them.
 - Windows and macOS install paths.
 - Multi-box or distributed install configurations.
-- Web UI or GUI for configuration or status — deferred to v2.
+- Web UI or GUI for configuration or status — covered by FEAT-005.
 - Fine-tuning pipelines or training workflows.
 - Reproducible benchmarking (P2 nice-to-have, not part of the install-and-tune journey).
 - Uninstall or removal workflow.

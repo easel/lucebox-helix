@@ -20,7 +20,7 @@ ddx:
 | Aspect | Description |
 |--------|-------------|
 | Problem | Multiple layers of the stack need language choices: the inference engine, the CLI tooling, the harness adapters, and (future) the web UI. The HELIX `language-runtime` slot defaulted to `typescript-bun` from project bootstrap boilerplate — that default does not reflect the actual implementation or the product's needs |
-| Current State | Inference engine: C++17 with CUDA 12 / HIP 7 (custom kernels, existing codebase). CLI and harness adapters: Python/uv (PR #334, #335 — 10,500+ LOC across `lucebox/` and `harness/` packages). Shell wrapper: `lucebox.sh` (~1,275 LOC, top-level orchestrator). No TypeScript/Bun code exists or is planned for v1 |
+| Current State | Inference engine: C++17 with CUDA 12 / HIP 7 (custom kernels, existing codebase). CLI and harness adapters: Python/uv (PR #334, #335 — 10,500+ LOC across `lucebox/` and `harness/` packages). Shell wrapper: `lucebox.sh` (~1,275 LOC, top-level orchestrator). No TypeScript/Bun code exists or is planned |
 | Requirements | Inference engine must support CUDA/HIP kernel development; CLI must integrate with Python harness clients; distribution must work on Linux without requiring users to build from source |
 | Decision Drivers | GPU kernel development is C++/CUDA — no realistic alternative. Python is the natural language for the harness adapter layer (AI tool CLIs are Python-native ecosystems). `lucebox.sh` shell wrapper already exists and handles systemd/Docker orchestration; shell is the right porcelain for that role |
 
@@ -46,7 +46,7 @@ We will use C++17 as the inference engine language, Python/uv as the CLI and har
 |------|--------|
 | Positive | Inference engine can use CUDA/HIP intrinsics without a FFI layer; Python CLI integrates naturally with AI tool ecosystems; shell wrapper handles systemd/Docker without language overhead |
 | Negative | Users need Python on the host (mitigated by `install.sh` bootstrap); three languages increase contributor ramp-up; shell code has weak type safety |
-| Neutral | A SPA framework (see ADR-004 when v2 begins) is the anticipated choice for the web UI; this ADR does not prejudice that decision |
+| Neutral | A SPA framework (see ADR-004) is the anticipated choice for the web UI; this ADR does not prejudice that decision |
 
 ## Risks
 
@@ -70,8 +70,8 @@ We will use C++17 as the inference engine language, Python/uv as the CLI and har
 
 ## Concern Impact
 
-- **Concern selection**: The `language-runtime` slot is `python-uv` (v1 CLI/harness) + C++17 (inference engine). See `concerns.md` slot decisions.
-- **Practice note**: Web UI language/framework is out of scope for this ADR; see ADR-004 when v2 begins.
+- **Concern selection**: The `language-runtime` slot is `python-uv` (CLI/harness) + C++17 (inference engine). See `concerns.md` slot decisions.
+- **Practice note**: Web UI language/framework is out of scope for this ADR; see ADR-004.
 
 ## References
 

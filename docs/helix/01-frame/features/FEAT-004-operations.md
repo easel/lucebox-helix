@@ -18,7 +18,7 @@ ddx:
 **Priority**: P0
 **Owner**: Platform Team
 **Covered PRD Subsystem(s)**: Model Management; Inference Server (operational surface)
-**Covered PRD Requirements**: FR-1, FR-6, FR-7, FR-8, FR-9, FR-10, P1-3, P1-4, P2-3, P2-4
+**Covered PRD Requirements**: FEAT-004 (Operations)
 **Cross-Subsystem Rationale**: Model management and server lifecycle are distinct PRD subsystems, but both are runtime operator actions issued through the same CLI surface. The runtime management workflow — start server, pull model, activate model, check metrics — is the capability; splitting it would produce two features neither of which represents a complete operator workflow.
 
 ## Overview
@@ -164,9 +164,9 @@ An operator managing a Lucebox deployment performs any routine task without cons
 - Initial software installation and hardware autotune — covered by FEAT-003.
 - Inference server internals, kernel configuration, and VRAM allocation strategy — covered by FEAT-002.
 - Harness adapter configuration and agentic tool routing — covered by FEAT-005.
-- Web management UI — deferred to v2 per PRD Non-Goals.
+- Web management UI — covered by FEAT-005.
 - Multi-model concurrent serving — addressed as a P2 PRD item; not a requirement of the operational surface in this spec.
-- Air-gapped or offline model download — out of scope for v1.
-- Windows and macOS support — out of scope per PRD Constraints.
-- Fine-tuning, training, or model conversion operations — inference only in v1.
+- Air-gapped or offline model download — not in scope at launch.
+- Windows and macOS support — not in scope per PRD Constraints.
+- Fine-tuning, training, or model conversion operations — inference only at launch.
 - Automated update scheduling or unattended upgrades — operators initiate all updates explicitly.

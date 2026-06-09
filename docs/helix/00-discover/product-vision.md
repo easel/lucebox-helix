@@ -2,6 +2,11 @@
 ddx:
   id: product-vision
   status: draft
+  links:
+    - id: prd
+      rel: informs
+    - id: concerns
+      rel: informs
 ---
 
 # Product Vision

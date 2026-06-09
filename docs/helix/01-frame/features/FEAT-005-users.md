@@ -226,11 +226,11 @@ candidate.
 ## Constraints and Assumptions
 
 - All six target CLIs (claude, codex, opencode, hermes-agent, pi, openclaw)
-  support endpoint and API key configuration via environment variables at the
-  time of v1 launch; if a tool does not, its adapter is blocked.
+  support endpoint and API key configuration via environment variables at
+  launch; if a tool does not, its adapter is blocked.
 - The Anthropic Messages API-compatible endpoint on the inference server
   (FEAT-002) is available before FEAT-005 can ship the `claude-code` adapter.
-- The v2 web UI static asset serving approach (C++ server vs. separate file
+- The web UI static asset serving approach (C++ server vs. separate file
   server) is an open architectural decision tracked in ADR-004; this spec does
   not constrain that choice.
 - Adapters are not responsible for informing the user whether the inference

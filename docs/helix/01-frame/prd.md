@@ -57,13 +57,12 @@ not performance on specific hardware.
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
 | Inference throughput (Qwen3.6-27B Q4_K_M, single-request, launch HW) | ≥120 tok/s sustained | `lucebox bench` output on reference machine |
-| Time to first harness-routed inference (fresh install) | ≤15 minutes | Timed setup walkthrough on reference machine |
+| Time to first harness-routed inference (fresh Linux install, CLI path) | ≤15 minutes | Timed setup walkthrough on reference machine |
 | Compatibility check accuracy on unsupported hardware | ≥80% diagnose specific deficiency | Manual test matrix across known-incompatible configs |
 | NPS (active users, 90-day survey) | ≥50 | Monthly survey |
 
 ### Non-Goals
 
-- Web management UI at `lucebox.local` — in scope (FEAT-005), not required for first hardware shipment.
 - Custom agentic harness / fork — deferred.
 - Subscription model and curated model library — post hardware launch.
 - Multi-box clustering or distributed inference.

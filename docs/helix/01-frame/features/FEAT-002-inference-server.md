@@ -16,7 +16,7 @@ ddx:
 **Priority**: P0
 **Owner**: Server Team
 **Covered PRD Subsystem(s)**: Inference Server
-**Covered PRD Requirements**: FR-1, FR-3, FR-5, P1-1, P1-2, P1-4
+**Covered PRD Requirements**: FEAT-002 (Inference Server)
 **Cross-Subsystem Rationale**: None — single subsystem.
 
 ## Overview
@@ -118,13 +118,13 @@ not fail with model-not-found errors when a model is loaded.
 #### Anthropic API Surface
 
 **ANT-01**. The server exposes an Anthropic Messages API-compatible endpoint
-that accepts and responds with the Anthropic Messages API schema (P1).
+that accepts and responds with the Anthropic Messages API schema.
 
 **ANT-02**. The Anthropic endpoint supports streaming responses equivalent to
-the streaming behavior of the Anthropic Messages API (P1).
+the streaming behavior of the Anthropic Messages API.
 
 **ANT-03**. Authentication on the Anthropic endpoint accepts the same
-configurable API key used by the OpenAI surface (P1).
+configurable API key used by the OpenAI surface.
 
 #### Capabilities Endpoint
 
@@ -195,7 +195,7 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
   requests are rejected with HTTP 401 before any inference work is performed.
 - **Protocol conformance**: OpenAI API v1 conformance is verified by automated
   tests before each release; Anthropic Messages API conformance is verified by
-  automated tests before each release (P1).
+  automated tests before each release.
 - **Observability**: Queue depth and active request count are always readable
   from `/props` without authentication so operators can diagnose backpressure
   from a monitoring script.
@@ -237,7 +237,7 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
 - OpenAI API conformance tests pass on 100% of tested endpoints before each
   release.
 - Anthropic Messages API conformance tests pass on the Claude endpoint before
-  each release (P1 gate).
+  each release.
 - Zero requests dropped under sustained load at queue-not-full depth in
   automated load tests.
 - `luce-dflash` model alias resolves successfully on 100% of requests when a
@@ -257,9 +257,7 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
 - `LUCEBOX_IMAGE` and `LUCEBOX_VARIANT` are consumed by the server as read-only
   values set by the installation subsystem (FEAT-003); the server does not pull
   or switch Docker images.
-- Anthropic Messages API endpoint is P1: it ships if the harness adapter
-  requirement (FR-16) is in scope for the release; the OpenAI surface is P0 and
-  ships regardless.
+- Anthropic Messages API endpoint is P0, required for the claude-code harness adapter (FEAT-005). The OpenAI surface is also P0 and ships regardless.
 - The default API key `sk-lucebox` is suitable for local loopback use; it is
   not suitable for network-exposed deployments. Operators exposing the server
   beyond localhost are responsible for setting a strong key.
@@ -296,12 +294,9 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
   image pull) — FEAT-003.
 - **Agentic harness adapters** (environment variable injection for claude-code,
   codex, opencode, etc.) — FEAT-005.
-- **Web management UI** — deferred to v2 per PRD non-goals.
-- **Multi-box clustering or distributed inference** — deferred per PRD
-  non-goals.
-- **Cloud-hosted or hybrid inference** — out of scope for v1 per PRD non-goals.
-- **Fine-tuning endpoints** — inference only in v1.
-- **Rate limiting beyond queue depth** (per-key quotas, token-budget
-  enforcement) — not in v1 scope.
-- **TLS termination** — the server listens on plaintext localhost; TLS is an
-  operator concern for network-exposed setups.
+- **Web management UI** — covered by FEAT-005; the server must serve the static SPA assets but does not own the UI itself.
+- **Multi-box clustering or distributed inference** — not in scope per PRD non-goals.
+- **Cloud-hosted or hybrid inference** — not in scope per PRD non-goals.
+- **Fine-tuning endpoints** — inference only at launch.
+- **Rate limiting beyond queue depth** (per-key quotas, token-budget enforcement) — not in scope at launch.
+- **TLS termination** — the server listens on plaintext localhost; TLS is an operator concern for network-exposed setups.
