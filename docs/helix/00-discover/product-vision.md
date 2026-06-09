@@ -13,10 +13,10 @@ ddx:
 
 ## Mission Statement
 
-Lucebox gives developers and technical users reliable local AI inference
-by shipping a dedicated hardware appliance and software tuned to the hardware
-for tested hardware-and-model pairs — so they get predictable performance
-without driver and runtime setup.
+Lucebox gives developers and technical users local AI inference on tested
+hardware and driver combinations by shipping a dedicated hardware appliance
+and software tuned to the hardware for tested hardware-and-model pairs —
+so they get predictable performance without driver and runtime setup.
 
 ## Positioning
 
@@ -38,8 +38,10 @@ reasoning workloads technical users run most. Running a 70B model locally
 becomes as routine as starting a Docker container.
 
 **North Star**: Any developer can unbox a Lucebox, reach their first model
-response in under 10 minutes, hit ≥120 tokens/second sustained on Qwen3.6-27B,
-and run a coding-agent workflow locally that replaces their cloud API subscription.
+response in under 10 minutes, hit all three throughput targets on Qwen3.6-27B
+(≥120 tok/s short-context, ≥60 tok/s at 128K with prefix caching, ≥60 tok/s
+at 128K with PFlash), and run a coding-agent workflow locally that replaces
+their cloud API subscription.
 
 ## User Experience
 
@@ -74,14 +76,14 @@ stack arrive as tested releases — applied in one click with no driver breakage
 | OpenAI-compatible API + native coding-agent harness | Generic clients work via the OpenAI-compatible endpoint; the native Lucebox harness delivers a tuned local coding-agent workflow optimized for the hardware |
 | Subscription model: curated optimized models | Subscribers get access to a library of hand-tuned foundation and task-specific models validated on Lucebox hardware; community tier runs open GGUF models |
 | Tested releases | Software updates are validated against the same hardware before shipping; no driver breakage |
-| Fixed cost + air-gapped operation | One-time hardware purchase removes subscription repricing risk; fully offline operation supports data-sovereignty requirements without sending traffic through API brokers |
+| Fixed cost + air-gapped operation | One-time hardware purchase removes subscription repricing risk; fully offline operation satisfies data-sovereignty requirements without sending traffic through API brokers |
 | Desktop footprint | Production-grade inference in a backpack-portable chassis, not a rack |
 
 ## Success Definition
 
 | Metric | Target |
 |--------|--------|
-| Inference throughput (Qwen3.6-27B Q4_K_M, single-request, launch hardware profile) | ≥120 tokens/second sustained at launch |
+| Inference throughput (Qwen3.6-27B Q4_K_M, launch hardware profile) | T1 ≥120 tok/s short-context; T2 ≥60 tok/s at 128K with prefix caching; T3 ≥60 tok/s at 128K with PFlash |
 | Time to first inference (unboxing to first response) | ≤10 minutes for 90% of first-time customers |
 | Net Promoter Score (technical users, 90-day survey) | ≥50 |
 | Tested deployable models at launch | ≥20 |

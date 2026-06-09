@@ -22,12 +22,14 @@ server (OpenAI-compatible HTTP API), installation and tuning (host check,
 Docker setup, autotune), operations (model management, benchmarking, metrics),
 and users (harness adapters routing claude-code, codex, opencode, hermes-agent,
 pi, and openclaw to the local endpoint). This eliminates cloud API dependency
-and removes setup churn for technical users who can't get reliable performance
+and removes setup churn for technical users who can't get reproducible throughput
 from generic stacks.
 
-**Top 3 success metrics:** ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on the
-launch hardware profile; ≤15 minutes from hardware boot to first harness-routed
-inference; NPS ≥50 from active users at 90 days.
+**Top 3 success metrics:** Qwen3.6-27B Q4_K_M on reference hardware meets all
+three throughput targets: ≥120 tok/s short-context, ≥60 tok/s at 128K
+multi-turn with prefix caching, ≥60 tok/s at 128K with PFlash compression;
+≤15 minutes from hardware boot to first harness-routed inference; NPS ≥50
+from active users at 90 days.
 
 ## Problem and Goals
 
@@ -38,14 +40,16 @@ debugging quantization mismatches, VRAM overflow, and API incompatibilities
 across generic stacks (Ollama, llama.cpp, LM Studio). When it works, throughput
 is unpredictable because no stack owns the hardware layer. When it breaks, there
 is no supported fix path. Developers who want to stop paying $50–$300/month in
-cloud API subscriptions for coding agents have no reliable on-premise
+cloud API subscriptions for coding agents have no validated on-premise
 alternative — the existing tools were built for flexibility across hardware,
 not performance on specific hardware.
 
 ### Goals
 
-1. Developers on the Strix Halo + RTX 3090 profile get ≥120 tok/s on
-   Qwen3.6-27B without manual tuning.
+1. Developers on the Strix Halo + RTX 3090 profile hit all three throughput
+   targets on Qwen3.6-27B without manual tuning: ≥120 tok/s at short context,
+   ≥60 tok/s at 128K multi-turn with prefix caching, and ≥60 tok/s at 128K
+   with PFlash compression.
 2. Switching an existing agentic coding tool (claude-code, codex, opencode,
    hermes-agent, pi, openclaw) to local inference requires one command after
    the server is running.
@@ -56,7 +60,9 @@ not performance on specific hardware.
 
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
-| Inference throughput (Qwen3.6-27B Q4_K_M, single-request, launch HW) | ≥120 tok/s sustained | `lucebox profile` output on reference machine |
+| T1 — Inference throughput, short context (Qwen3.6-27B Q4_K_M, 1K prompt, single-request) | ≥120 tok/s sustained | `lucebox profile` on reference machine |
+| T2 — Inference throughput, 128K multi-turn agentic context with prefix caching (Qwen3.6-27B Q4_K_M) | ≥60 tok/s sustained | `lucebox profile` on reference machine, caching enabled |
+| T3 — Inference throughput, 128K long-context with PFlash compression (Qwen3.6-27B Q4_K_M) | ≥60 tok/s sustained | `lucebox profile` on reference machine, PFlash enabled |
 | Time to first harness-routed inference (fresh Linux install, CLI path) | ≤15 minutes | Timed setup walkthrough on reference machine |
 | Compatibility check accuracy on unsupported hardware | ≥80% diagnose specific deficiency | Manual test matrix across known-incompatible configs |
 | NPS (active users, 90-day survey) | ≥50 | Monthly survey |
@@ -127,15 +133,19 @@ rejection forces a search for an on-premise alternative.
 ### Must Have (P0)
 
 1. Inference engine with DFlash, DDTree, PFlash, and Megakernel optimizations running on all validated GPU profiles. *(FEAT-001)*
-2. ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on the Strix Halo + RTX 3090 reference hardware. *(FEAT-001)*
-3. Multi-GPU layer split across Strix Halo iGPU and RTX 3090 — required for full performance on reference hardware. *(FEAT-001)*
-4. OpenAI-compatible API exposed on localhost (completions, chat, models endpoints). *(FEAT-002)*
-5. `lucebox check` reports host compatibility and specific deficiencies before install. *(FEAT-003)*
-6. Software installs on any compatible Linux hardware via a single bootstrap command. *(FEAT-003)*
-7. Model download, list, remove, and activate via CLI with automatic quantization selection. *(FEAT-004)*
-8. `lucebox profile` produces reproducible throughput benchmarks on reference hardware. *(FEAT-004)*
-9. Anthropic Messages API-compatible endpoint for claude-code harness compatibility. *(FEAT-002, FEAT-005)*
-10. Harness adapters for claude-code, codex, opencode, hermes-agent, pi, and openclaw route to the local endpoint. *(FEAT-005)*
+2. Three throughput targets on Qwen3.6-27B Q4_K_M, Strix Halo + RTX 3090 reference hardware *(FEAT-001)*:
+   - T1: ≥120 tok/s sustained, short context (1024-token prompt, single-request)
+   - T2: ≥60 tok/s sustained, 128K multi-turn agentic context with prefix caching enabled
+   - T3: ≥60 tok/s sustained, 128K long-context with PFlash compression enabled
+3. 128K+ context window on Qwen3.6-27B on the reference hardware profile — prerequisite for T2 and T3. *(FEAT-001)*
+4. Multi-GPU layer split across Strix Halo iGPU and RTX 3090 — required for full performance on reference hardware. *(FEAT-001)*
+5. OpenAI-compatible API exposed on localhost (completions, chat, models endpoints). *(FEAT-002)*
+6. `lucebox check` reports host compatibility and specific deficiencies before install. *(FEAT-003)*
+7. Software installs on any compatible Linux hardware via a single bootstrap command. *(FEAT-003)*
+8. Model download, list, remove, and activate via CLI with automatic quantization selection. *(FEAT-004)*
+9. `lucebox profile` produces reproducible throughput benchmarks on reference hardware. *(FEAT-004)*
+10. Anthropic Messages API-compatible endpoint for claude-code harness compatibility. *(FEAT-002, FEAT-005)*
+11. Harness adapters for claude-code, codex, opencode, hermes-agent, pi, and openclaw route to the local endpoint. *(FEAT-005)*
 
 ### Should Have (P1)
 
@@ -143,7 +153,6 @@ rejection forces a search for an on-premise alternative.
 2. Inference server container starts on boot via a `lucebox.service` systemd unit. *(FEAT-003)*
 3. Active model switching without server restart. *(FEAT-004)*
 4. Inference metrics accessible in real time (tokens/sec, VRAM usage, queue depth). *(FEAT-004)*
-5. 128K+ context window on Qwen3.6-27B on the reference hardware profile. *(FEAT-001)*
 
 ### Nice to Have (P2)
 
@@ -156,7 +165,7 @@ Detailed requirements for each capability area live in the corresponding feature
 
 ### Inference Engine — [FEAT-001](features/FEAT-001-inference-engine.md)
 
-The inference engine is a C++17 GPU runtime purpose-built for the Lucebox hardware profile. It runs speculative decoding on the decode path, speculative compression on the prefill path, and fused kernel dispatch for hybrid models. It splits computation across the Strix Halo iGPU and RTX 3090 discrete GPU, achieves ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on reference hardware, and supports context windows up to 128K tokens. Validated GPU profiles span RTX 3090 (reference), RTX 5090, RTX 4090, RTX 2080 Ti, Strix Halo HIP, and RX 7900 XTX.
+The inference engine is a C++17 GPU runtime purpose-built for the Lucebox hardware profile. It runs speculative decoding on the decode path, speculative compression on the prefill path, and fused kernel dispatch for hybrid models. Computation splits across the Strix Halo iGPU and RTX 3090 discrete GPU; the engine hits ≥120 tok/s at short context and ≥60 tok/s at 128K context (via prefix caching or PFlash compression) on Qwen3.6-27B Q4_K_M on reference hardware, and accepts context windows up to 128K tokens. Validated GPU profiles span RTX 3090 (reference), RTX 5090, RTX 4090, RTX 2080 Ti, Strix Halo HIP, and RX 7900 XTX.
 
 ### Inference Server — [FEAT-002](features/FEAT-002-inference-server.md)
 
@@ -178,7 +187,9 @@ Harness adapters route claude-code, codex, opencode, hermes-agent, pi, and openc
 
 | Capability | Scenario | Condition | Expected Outcome |
 |------------|----------|-----------|-----------------|
-| Inference Engine (FEAT-001) | Throughput on reference hardware | Benchmark run on Strix Halo + RTX 3090 with Qwen3.6-27B Q4_K_M | ≥120 tok/s sustained reported |
+| Inference Engine (FEAT-001) | T1 — short-context throughput | Benchmark run on Strix Halo + RTX 3090, Qwen3.6-27B Q4_K_M, 1K prompt, single-request | ≥120 tok/s sustained |
+| Inference Engine (FEAT-001) | T2 — 128K multi-turn throughput with prefix caching | Benchmark run, 128K cached prefix context, caching enabled | ≥60 tok/s sustained |
+| Inference Engine (FEAT-001) | T3 — 128K long-context throughput with PFlash | Benchmark run, 128K context, PFlash compression enabled | ≥60 tok/s sustained |
 | Inference Server (FEAT-002) | OpenAI API surface | Model listing request to running server | Valid JSON array of available models returned |
 | Inference Server (FEAT-002) | Anthropic API compat | Anthropic Messages API request to running server | Valid response conforming to Anthropic response schema |
 | Installation and Tuning (FEAT-003) | Compatibility check — passing | Host check run on reference hardware | All checks pass; throughput estimate printed |
@@ -240,6 +251,6 @@ Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 
 ## Success Criteria
 
 - A developer on a fresh Linux install with Strix Halo + RTX 3090 hardware runs `lucebox check` (all checks pass), installs Lucebox, downloads Qwen3.6-27B, and routes at least one agentic coding harness to local inference — all within 15 minutes.
-- `lucebox profile` on the reference hardware reports ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M before the first hardware batch ships.
+- `lucebox profile` on the reference hardware reports all three throughput targets on Qwen3.6-27B Q4_K_M before the first hardware batch ships: ≥120 tok/s short-context (T1), ≥60 tok/s at 128K with prefix caching (T2), and ≥60 tok/s at 128K with PFlash (T3).
 - `lucebox check` on a machine with known-incompatible hardware (e.g., 8GB VRAM GPU) names the specific failing check with a link to a fix.
 - Zero harness adapters require a cloud API key to function against the local Lucebox endpoint.

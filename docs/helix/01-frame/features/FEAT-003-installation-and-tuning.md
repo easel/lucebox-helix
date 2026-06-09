@@ -23,7 +23,7 @@ This feature covers the complete journey from bare hardware to a tuned, running 
 
 ## Ideal Future State
 
-A developer on compatible Linux hardware opens a terminal and runs a single curl command. The installer validates prerequisites, installs the CLI and Python package, and exits with a clear next-step prompt. The developer then pulls the inference container and runs autotune, which probes the hardware, selects the highest-fidelity quantization the VRAM can sustain, and writes a configuration file. From that point forward, the server starts on every boot without manual intervention.
+A developer on compatible Linux hardware opens a terminal and runs a single curl command. Prerequisite validation, CLI installation, and the Python package install all complete without prompts, ending with a clear next-step message. The developer then pulls the inference container and runs autotune, which probes the hardware, selects the highest-fidelity quantization the VRAM can sustain, and writes a configuration file. From that point forward, the server starts on every boot without manual intervention.
 
 When this feature is working well:
 

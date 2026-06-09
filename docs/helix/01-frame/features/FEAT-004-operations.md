@@ -81,7 +81,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 - **BNV-01**. The smoke test operation sends a minimal completion request to the configured local endpoint and exits 0 on a valid response or exits non-zero with a structured error on any failure.
 - **BNV-02**. The profile capture operation records a benchmark snapshot via luce-bench integration and writes the result to a timestamped output file in the configured output directory.
 - **BNV-03**. The profile operation (`lucebox profile`) runs reproducibly against the active model on the running server via luce-bench and reports sustained tokens/sec.
-- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, `lucebox profile` reports ≥120 tok/s sustained.
+- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, `lucebox profile` reports results satisfying all three throughput targets: ≥120 tok/s short-context (T1), ≥60 tok/s at 128K multi-turn with prefix caching (T2), and ≥60 tok/s at 128K with PFlash compression (T3).
 - **BNV-05**. Profile output includes the model name, quantization, hardware profile identifier, and timestamp so results are comparable across runs.
 
 #### Configuration Management
@@ -137,7 +137,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 
 - The server start operation reaches healthy state within 30 seconds on reference hardware across 10 consecutive cold starts (zero failures).
 - Model activation completes an active model switch on a server with 10 in-flight requests without dropping any request (all requests return a valid response or well-formed error).
-- `lucebox profile` on reference hardware with Qwen3.6-27B Q4_K_M reports ≥120 tok/s sustained in 5 consecutive runs with ≤5% variance between runs.
+- `lucebox profile` on reference hardware with Qwen3.6-27B Q4_K_M reports all three throughput targets — T1 ≥120 tok/s (short-context), T2 ≥60 tok/s (128K + prefix caching), T3 ≥60 tok/s (128K + PFlash) — in 5 consecutive runs with ≤5% variance between runs per scenario.
 - The smoke test exits 0 on a healthy server 100% of the time across the reference hardware test matrix.
 - All operations exit non-zero and print a structured error message (not a raw Python traceback) for every documented error condition.
 

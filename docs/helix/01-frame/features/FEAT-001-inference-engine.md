@@ -21,8 +21,8 @@ ddx:
 
 The Inference Engine is the C++17 core that loads, manages, and executes LLM
 inference on validated GPU hardware. It is the primary subject of FEAT-001 and
-the sole source of inference capability for the product. The engine is not
-user-facing; the Inference Server (FEAT-002) wraps it and exposes the
+the sole source of inference capability for the product. Not user-facing, the
+engine is wrapped by the Inference Server (FEAT-002), which exposes the
 OpenAI-compatible API. All performance optimization techniques (DFlash,
 PFlash, DDTree, Megakernel) are capabilities of this engine, each with a
 dedicated technical design doc.
@@ -31,7 +31,7 @@ dedicated technical design doc.
 
 A developer on any validated hardware profile loads a supported GGUF model,
 submits a prompt, and receives a completion at the full token throughput the
-hardware supports — with no manual tuning, no VRAM overflow, and no
+GPU delivers — with no manual tuning, no VRAM overflow, and no
 quantization guesswork. The engine selects the optimization path appropriate
 to the model architecture and hardware automatically. Throughput and context
 window behavior are predictable and reproducible: the same model + hardware +
@@ -172,14 +172,19 @@ FEAT-002.
 
 ### Non-Functional Requirements
 
-- **Throughput**: ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M, single-request
-  load, RTX 3090 24GB reference hardware. Sustained means the throughput
-  average across the full generation of a 1024-token output does not fall
-  below 120 tok/s.
+- **Throughput — T1 (short context)**: ≥120 tok/s sustained on Qwen3.6-27B
+  Q4_K_M, single-request, ~1024-token prompt, RTX 3090 24GB reference hardware.
+  Sustained means the throughput average across the full 1024-token generation
+  does not fall below 120 tok/s.
+- **Throughput — T2 (128K multi-turn, prefix caching)**: ≥60 tok/s sustained on
+  Qwen3.6-27B Q4_K_M, single-request, 128K cached prefix context (agentic
+  multi-turn), DFlash prefix cache enabled, RTX 3090 24GB reference hardware.
+- **Throughput — T3 (128K long-context, PFlash)**: ≥60 tok/s sustained on
+  Qwen3.6-27B Q4_K_M, single-request, 128K context processed via PFlash
+  speculative prefill compression, RTX 3090 24GB reference hardware.
 - **Context window**: 128K token context window on Qwen3.6-27B Q4_K_M on the
-  RTX 3090 24GB profile without OOM. No per-token throughput guarantee applies
-  at 128K context; the requirement is that the engine completes the generation
-  without error.
+  RTX 3090 24GB profile without OOM. Required for the T2 and T3 throughput
+  targets above.
 - **Latency**: Time-to-first-token on Qwen3.6-27B Q4_K_M with a 512-token
   prompt is ≤2 seconds on the RTX 3090 24GB reference hardware.
 - **Load time**: Engine reaches the ready-for-inference state within 30 seconds
@@ -232,9 +237,15 @@ FEAT-002.
 
 ## Success Metrics
 
-- Sustained throughput on Qwen3.6-27B Q4_K_M, RTX 3090 24GB, single-request:
-  ≥120 tok/s across a 1024-token generation. Measured by the throughput
-  benchmark.
+- T1 — Sustained throughput on Qwen3.6-27B Q4_K_M, RTX 3090 24GB, single-request,
+  ~1024-token prompt: ≥120 tok/s across a 1024-token generation. Measured by
+  the throughput benchmark.
+- T2 — Sustained throughput on Qwen3.6-27B Q4_K_M, RTX 3090 24GB, 128K cached
+  prefix context (agentic multi-turn), DFlash prefix cache enabled: ≥60 tok/s.
+  Measured by the throughput benchmark with caching enabled.
+- T3 — Sustained throughput on Qwen3.6-27B Q4_K_M, RTX 3090 24GB, 128K context
+  with PFlash compression enabled: ≥60 tok/s. Measured by the throughput
+  benchmark with PFlash enabled.
 - RTX 5090 throughput on Qwen3.6-27B Q4_K_M: ≥205 tok/s. Measured by the
   throughput benchmark.
 - PFlash speedup on Qwen3.6-27B, RTX 3090 24GB: ≥5.6× prefill speedup vs.
@@ -268,11 +279,13 @@ FEAT-002.
   also hosts an RTX 3090 in the Lucebox reference configuration; the inference
   path on that configuration uses the RTX 3090 CUDA path, not the Strix Halo
   HIP path.
-- All throughput figures (130 tok/s RTX 3090, 205 tok/s RTX 5090, 53 tok/s
-  RTX 2080 Ti, 37 tok/s Strix Halo HIP, 50 tok/s RX 7900 XTX) are benchmarked
-  on Qwen3.6-27B Q4_K_M, single-request, and are treated as observed baselines,
-  not contractual minimums, except for the RTX 3090 reference figure (≥120
-  tok/s) which is a P0 contractual target.
+- All throughput figures (130 tok/s RTX 3090 short-context, 205 tok/s RTX 5090,
+  53 tok/s RTX 2080 Ti, 37 tok/s Strix Halo HIP, 50 tok/s RX 7900 XTX) are
+  benchmarked on Qwen3.6-27B Q4_K_M, single-request, and are treated as
+  observed baselines, not contractual minimums, except for the three RTX 3090
+  reference targets (T1: ≥120 tok/s short-context, T2: ≥60 tok/s at 128K with
+  prefix caching, T3: ≥60 tok/s at 128K with PFlash) which are P0 contractual
+  targets.
 
 ## Dependencies
 

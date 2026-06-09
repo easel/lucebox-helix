@@ -35,10 +35,9 @@ A developer already running claude-code, codex, opencode, hermes-agent, pi, or
 openclaw against cloud endpoints invokes their chosen tool through the Lucebox
 harness adapter and it starts working against the local Lucebox inference
 server — no API key changes, no configuration file edits, no understanding of
-the inference server internals required. The tool behaves identically to its
-cloud-connected form: completions arrive, context is preserved, and the
-developer's existing workflow is unchanged except that inference is local and
-free of cloud API charges.
+the inference server internals required. Completions arrive, context is
+preserved, and the developer's existing workflow is unchanged except that
+inference is local and free of cloud API charges.
 
 When a requested underlying tool is not installed, Lucebox fails clearly with
 a message naming the missing binary and where to get it — not silently,
@@ -241,8 +240,8 @@ candidate.
 
 - **Other features**: FEAT-002 (Inference Server API) — adapters require a
   running inference server with an OpenAI-compatible endpoint; the
-  `claude-code` adapter additionally requires the Anthropic Messages
-  API-compatible endpoint defined in FEAT-002.
+  `claude-code` adapter requires the Anthropic Messages API-compatible endpoint
+  defined in FEAT-002.
 - **External binaries**: `claude` (Claude Code CLI), `codex` (OpenAI Codex
   CLI), `opencode` (OpenCode CLI), `hermes-agent` (Hermes Agent CLI), `pi`
   (Pi CLI), `openclaw` (OpenClaw CLI) — each must be installed independently

@@ -29,8 +29,7 @@ reaches the inference engine exclusively through this server.
 
 The server exists because clients — OpenAI-SDK-based tools, the Claude Code CLI,
 and future integrations — must be able to drop in a `base_url` and an API key
-without code changes. Making that promise reliable is the full scope of this
-feature.
+without code changes. Holding that contract is the full scope of this feature.
 
 ## Ideal Future State
 
@@ -55,8 +54,8 @@ feature availability without out-of-band documentation.
   capability but has no stable HTTP interface. Clients must use engine-internal
   APIs or proprietary bindings.
 - **Pain points**: Every agentic tool (claude-code, codex, opencode, etc.)
-  expects an OpenAI-compatible HTTP endpoint. The Claude Code CLI additionally
-  requires Anthropic Messages API semantics. Without a protocol-compatible HTTP
+  expects an OpenAI-compatible HTTP endpoint. Claude Code requires Anthropic
+  Messages API semantics beyond the OpenAI surface. Without a protocol-compatible HTTP
   layer, no harness adapter can route to local inference without code changes in
   the upstream tool.
 - **Desired outcome**: A single server process that passes OpenAI API
