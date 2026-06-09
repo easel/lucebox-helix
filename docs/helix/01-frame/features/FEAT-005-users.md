@@ -13,21 +13,21 @@ ddx:
 
 **Feature ID**: FEAT-005
 **Status**: Draft
-**Priority**: P0 (v1 harness adapters); P1 (v2 web UI)
+**Priority**: P0 (harness adapters); P1 (web UI)
 **Owner**: Product Team
-**Covered PRD Subsystem(s)**: Agentic Harness Wrappers
-**Covered PRD Requirements**: FR-14, FR-15, FR-16, FR-17
+**Covered PRD Subsystem(s)**: Users
+**Covered PRD Requirements**: FEAT-005 (Users)
 **Cross-Subsystem Rationale**: None — single subsystem.
 
 ## Overview
 
 This feature defines the user-facing interface layer through which developers
-interact with the Lucebox inference server using their existing tools. In v1,
-it delivers six harness adapters — one per supported agentic coding tool —
+interact with the Lucebox inference server using their existing tools. It
+delivers six harness adapters — one per supported agentic coding tool —
 that configure and launch the real client binary pointed at the local endpoint,
-satisfying the PRD's FR-14 through FR-17 requirements for no-cloud-key
-operation and stateless invocation. In v2 (deferred), it extends to a
-browser-based management UI at `lucebox.local`.
+enabling no-cloud-key operation and stateless invocation. It also includes a
+browser-based management UI at `lucebox.local`, served as a static SPA directly
+by the inference server.
 
 ## Ideal Future State
 
@@ -44,8 +44,8 @@ When a requested underlying tool is not installed, Lucebox fails clearly with
 a message naming the missing binary and where to get it — not silently,
 not with a cryptic error from inside the underlying tool.
 
-In v2, the same developer can open `lucebox.local` in a browser to inspect
-model status, view inference metrics, manage installed models, and configure
+The same developer can open `lucebox.local` in a browser to inspect model
+status, view inference metrics, manage installed models, and configure
 harness defaults — without any additional server process to manage.
 
 ## Problem Statement
@@ -75,7 +75,7 @@ harness defaults — without any additional server process to manage.
 | Harness Adapters | How do I run my existing tool against the local server? | Locate the binary, configure the environment, launch the real process |
 | Shared Adapter Interface | What is the common behavior all adapters guarantee? | Binary lookup, environment configuration, process handoff; default credentials; statelessness |
 | Claude Code Adapter (Anthropic compat) | Does claude-code work without code changes on my side? | Route through the Anthropic Messages API-compatible endpoint |
-| v2 Web UI (deferred) | How do I manage models and monitor the server without a CLI? | Browser SPA at `lucebox.local`; deferred to v2 |
+| Web UI | How do I manage models and monitor the server without a CLI? | Browser SPA at `lucebox.local`; served directly from the inference server |
 
 ## Requirements
 
@@ -138,24 +138,20 @@ configuration.
 CLAUDE-02. The Anthropic-compatible endpoint accepts the `sk-lucebox` default
 key without requiring a valid Anthropic API account.
 
-#### v2 Web UI (Deferred)
+#### Web UI
 
-The v2 web UI is explicitly out of scope for v1. Requirements in this area are
-placeholders that anchor the v2 direction; full specification is deferred until
-v2 begins.
+WEB-01. A browser-based management UI is accessible at `lucebox.local` with
+no additional server process required beyond the inference server.
 
-WEB-01. (v2) A browser-based management UI is accessible at `lucebox.local`
-with no additional server process required beyond the inference server.
-
-WEB-02. (v2) The UI is a static SPA that consumes the C++ inference server API
+WEB-02. The UI is a static SPA that consumes the C++ inference server API
 directly; no Node.js or backend server process intermediates requests.
 
-WEB-03. (v2) The UI surfaces model management (download, activate, remove),
-server status, inference metrics, and harness configuration.
+WEB-03. The UI surfaces model management (download, activate, remove), server
+status, inference metrics, and harness configuration.
 
-WEB-04. (v2) The frontend framework and static asset serving mechanism are
-decided by ADR-004; SvelteKit with a static adapter or Svelte+Vite is the
-leading candidate.
+WEB-04. The frontend framework and static asset serving mechanism are decided
+by ADR-004; SvelteKit with a static adapter or Svelte+Vite is the leading
+candidate.
 
 ### Non-Functional Requirements
 
@@ -251,8 +247,7 @@ leading candidate.
   CLI), `opencode` (OpenCode CLI), `hermes-agent` (Hermes Agent CLI), `pi`
   (Pi CLI), `openclaw` (OpenClaw CLI) — each must be installed independently
   by the user; Lucebox does not bundle or install them.
-- **PRD requirements**: FR-14 (harness adapters), FR-15 (no cloud API key),
-  FR-16 (Anthropic compat endpoint), FR-17 (stateless adapters).
+- **PRD requirements**: FEAT-005 (Users) — harness adapters and web UI.
 
 ## Out of Scope
 
@@ -263,10 +258,10 @@ leading candidate.
 - Installation or management of the underlying tool CLIs (claude, codex,
   opencode, hermes-agent, pi, openclaw) — those are user-managed; Lucebox
   does not wrap their install paths.
-- Custom agentic harness or fork of any underlying tool — deferred to v3 per
-  the PRD non-goals.
+- Custom agentic harness or fork of any underlying tool — out of scope per the
+  PRD non-goals.
 - Windows or macOS adapter support at launch.
 - Any network-level proxying, request logging, or content inspection of
   traffic between the adapter-launched client and the inference server.
-- The v2 web SPA full specification — deferred; WEB-01 through WEB-04 are
-  directional placeholders only.
+- Frontend framework selection — pending ADR-004; WEB-01 through WEB-04 state
+  behavioral requirements independent of that choice.

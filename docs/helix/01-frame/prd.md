@@ -63,13 +63,13 @@ not performance on specific hardware.
 
 ### Non-Goals
 
-- Web management UI at `lucebox.local` — deferred.
+- Web management UI at `lucebox.local` — in scope (FEAT-005), not required for first hardware shipment.
 - Custom agentic harness / fork — deferred.
 - Subscription model and curated model library — post hardware launch.
 - Multi-box clustering or distributed inference.
 - Windows and macOS support at launch.
 - Cloud-hosted or hybrid inference modes.
-- Fine-tuning pipelines (inference only in v1).
+- Fine-tuning pipelines — inference only at launch.
 
 Deferred items tracked in `docs/helix/01-frame/parking-lot.md`.
 
@@ -140,70 +140,52 @@ rejection forces a search for an on-premise alternative.
 
 ### Should Have (P1)
 
-1. `lucebox autotune` selects optimal quantization and draft configuration for the installed hardware. *(FEAT-003)*
-3. Inference server container starts on boot via a `lucebox.service` systemd unit. *(FEAT-003)*
-4. Active model switching via CLI without server restart. *(FEAT-004)*
-5. Inference metrics visible via CLI (tokens/sec, VRAM usage, queue depth). *(FEAT-004)*
-6. 128K+ context window on Qwen3.6-27B on the reference hardware profile. *(FEAT-001)*
+1. Automated tuning selects optimal quantization and draft configuration for the installed hardware. *(FEAT-003)*
+2. Inference server container starts on boot via a `lucebox.service` systemd unit. *(FEAT-003)*
+3. Active model switching without server restart. *(FEAT-004)*
+4. Inference metrics accessible in real time (tokens/sec, VRAM usage, queue depth). *(FEAT-004)*
+5. 128K+ context window on Qwen3.6-27B on the reference hardware profile. *(FEAT-001)*
 
 ### Nice to Have (P2)
 
 1. Multiple concurrent models loaded simultaneously (memory-permitting). *(FEAT-002)*
 2. Shell completions for the `lucebox` CLI. *(FEAT-004)*
 
-## Functional Requirements
+## Capabilities
 
-### Subsystem: Inference Engine (FEAT-001)
+Detailed requirements for each capability area live in the corresponding feature specification. The PRD owns scope, priority, and success criteria; the feature specs own behavior and boundaries.
 
-- **FR-1** — The inference engine achieves ≥120 tok/s sustained throughput on Qwen3.6-27B Q4_K_M on the Strix Halo + RTX 3090 reference hardware under single-request load.
-- **FR-2** — The engine supports speculative decoding on the decode path, speculative compression on the prefill path, and fused kernel dispatch for hybrid models.
-- **FR-3** — The engine splits model layers across multiple GPU contexts, utilizing both the Strix Halo iGPU and the RTX 3090 discrete GPU on the reference hardware.
-- **FR-4** — The engine supports context windows up to 128K tokens for Qwen3.6-27B on the reference hardware profile without running out of memory.
-- **FR-5** — Validated hardware profiles include RTX 3090 (reference), RTX 5090, RTX 4090, RTX 2080 Ti, Strix Halo HIP, and RX 7900 XTX.
+### Inference Engine — [FEAT-001](features/FEAT-001-inference-engine.md)
 
-### Subsystem: Inference Server (FEAT-002)
+The inference engine is a C++17 GPU runtime purpose-built for the Lucebox hardware profile. It runs speculative decoding on the decode path, speculative compression on the prefill path, and fused kernel dispatch for hybrid models. It splits computation across the Strix Halo iGPU and RTX 3090 discrete GPU, achieves ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on reference hardware, and supports context windows up to 128K tokens. Validated GPU profiles span RTX 3090 (reference), RTX 5090, RTX 4090, RTX 2080 Ti, Strix Halo HIP, and RX 7900 XTX.
 
-- **FR-6** — The server exposes an OpenAI-compatible API (completions, chat completions, and model listing) on a configurable local port.
-- **FR-7** — The server exposes an Anthropic Messages API-compatible endpoint enabling Claude Code to route to the local server without reconfiguration.
-- **FR-8** — The server exposes a capabilities endpoint reporting active configuration, supported features, and real-time metrics.
-- **FR-9** — Requests exceeding current capacity are queued rather than dropped; queue depth is observable.
-- **FR-10** — The server starts and stops cleanly under process lifecycle management.
+### Inference Server — [FEAT-002](features/FEAT-002-inference-server.md)
 
-### Subsystem: Installation and Tuning (FEAT-003)
+The inference server wraps the engine in an HTTP API. It exposes an OpenAI-compatible endpoint for broad tool compatibility, an Anthropic Messages API-compatible endpoint for Claude Code, and a capabilities endpoint for configuration and real-time metrics. Requests are queued rather than dropped under load.
 
-- **FR-11** — Host compatibility is checked before any install step and reports pass/fail for each requirement: container runtime, GPU driver version, container toolkit registration, available VRAM, available RAM, and init system.
-- **FR-12** — Each failing check identifies the specific deficiency and provides a documented remediation path.
-- **FR-13** — On the reference hardware profile, all checks pass and expected throughput is reported.
-- **FR-14** — Installation on a passing host completes in three or fewer operator actions.
-- **FR-15** — The software installs on any compatible Linux x86_64 host; it is not locked to Lucebox-branded hardware.
-- **FR-16** — The inference server starts automatically on boot via a managed system service.
-- **FR-17** — An automated tuning pass selects the optimal quantization level, draft model, and context window size for the installed hardware and writes the result to persistent configuration.
+### Installation and Tuning — [FEAT-003](features/FEAT-003-installation-and-tuning.md)
 
-### Subsystem: Operations (FEAT-004)
+Covers the full journey from bare hardware to a tuned, running server. Includes host compatibility checking with specific deficiency reporting and remediation links, a single-command bootstrap installer, Docker image management, a boot service, and an automated tuning pass that selects optimal quantization, draft model, and context window configuration for the installed hardware.
 
-- **FR-18** — Models are downloaded from a curated registry; the highest-fidelity quantization that fits in available memory is selected automatically.
-- **FR-19** — Installed models can be listed with their quantization level and storage footprint.
-- **FR-20** — Models can be removed, freeing their storage.
-- **FR-21** — The active model can be switched without restarting the server; requests in flight complete against the prior model.
-- **FR-22** — Reproducible throughput benchmarks can be produced for any installed model on the current hardware.
+### Operations — [FEAT-004](features/FEAT-004-operations.md)
 
-### Subsystem: Users (FEAT-005)
+Day-to-day management of a running Lucebox system. Operators download models from a curated registry with automatic quantization selection, list and remove installed models, switch the active model without restarting the server, and run reproducible throughput benchmarks.
 
-- **FR-23** — Harness adapters route claude-code, codex, opencode, hermes-agent, pi, and openclaw to the local inference endpoint with no cloud API key required.
-- **FR-24** — The claude-code adapter is compatible with the Anthropic Messages API so Claude Code routes without reconfiguration.
-- **FR-25** — Adapter invocations are stateless and do not modify the underlying tool's persistent configuration.
+### Users — [FEAT-005](features/FEAT-005-users.md)
+
+Harness adapters route claude-code, codex, opencode, hermes-agent, pi, and openclaw to the local inference endpoint without requiring a cloud API key. The claude-code adapter is compatible with the Anthropic Messages API so Claude Code routes without reconfiguration. Adapters are stateless. A browser-based management UI at `lucebox.local` is also in scope, exposing model management, metrics, and server controls via a SPA served directly from the inference server.
 
 ## Acceptance Test Sketches
 
-| Requirement | Scenario | Condition | Expected Outcome |
-|-------------|----------|-----------|-----------------|
-| FR-1 | Throughput on reference hardware | Benchmark run on Strix Halo + RTX 3090 with Qwen3.6-27B Q4_K_M | ≥120 tok/s sustained reported |
-| FR-6 | OpenAI API surface | Model listing request to running server | Valid JSON array of available models returned |
-| FR-7 | Anthropic API compat | Anthropic Messages API request to running server | Valid response conforming to Anthropic response schema |
-| FR-11 | Compatibility check — passing | Host check run on reference hardware | All checks pass; throughput estimate printed |
-| FR-11 | Compatibility check — failing | Host check run on host with 8GB VRAM GPU | VRAM check fails with specific deficiency message and remediation link |
-| FR-18 | Auto-quantization on download | Model downloaded on host with 24GB VRAM and 128GB RAM | Q4_K_M selected automatically without user input |
-| FR-23 | Harness adapter — no API key | Coding tool launched via harness adapter | Completion served from local server; no cloud API key prompted |
+| Capability | Scenario | Condition | Expected Outcome |
+|------------|----------|-----------|-----------------|
+| Inference Engine (FEAT-001) | Throughput on reference hardware | Benchmark run on Strix Halo + RTX 3090 with Qwen3.6-27B Q4_K_M | ≥120 tok/s sustained reported |
+| Inference Server (FEAT-002) | OpenAI API surface | Model listing request to running server | Valid JSON array of available models returned |
+| Inference Server (FEAT-002) | Anthropic API compat | Anthropic Messages API request to running server | Valid response conforming to Anthropic response schema |
+| Installation and Tuning (FEAT-003) | Compatibility check — passing | Host check run on reference hardware | All checks pass; throughput estimate printed |
+| Installation and Tuning (FEAT-003) | Compatibility check — failing | Host check run on host with 8GB VRAM GPU | VRAM check fails with specific deficiency message and remediation link |
+| Operations (FEAT-004) | Auto-quantization on download | Model downloaded on host with 24GB VRAM and 128GB RAM | Q4_K_M selected automatically without user input |
+| Users (FEAT-005) | Harness adapter — no API key | Coding tool launched via harness adapter | Completion served from local server; no cloud API key prompted |
 
 ## Technical Context
 
@@ -250,11 +232,11 @@ Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 
 
 ## Open Questions
 
-- [ ] What is the minimum compatible hardware spec for non-Lucebox installs (minimum VRAM, RAM, PCIe gen)? — defer to `lucebox check` for compatibility determination; exact non-Lucebox floor TBD — blocks FR-11, FR-18.
-- [ ] Which Linux distributions are officially supported at launch (Ubuntu 22.04/24.04, Fedora, Arch)? — blocks FR-18, FR-19.
-- [ ] Is the Anthropic Messages API wrapper officially supported or community-maintained? — blocks FR-16 support posture.
+- [ ] What is the minimum compatible hardware spec for non-Lucebox installs (minimum VRAM, RAM, PCIe gen)? — defer to `lucebox check` for compatibility determination; exact non-Lucebox floor TBD.
+- [ ] Which Linux distributions are officially supported at launch (Ubuntu 22.04/24.04, Fedora, Arch)?
+- [ ] Is the Anthropic Messages API wrapper officially supported or community-maintained?
 - [x] Software license: Apache 2.0. See ADR-001.
-- [x] Distribution mechanism: `curl -fsSL https://raw.githubusercontent.com/Luce-Org/lucebox-hub/main/install.sh | bash`. See FR-19.
+- [x] Distribution mechanism: `curl -fsSL https://raw.githubusercontent.com/Luce-Org/lucebox-hub/main/install.sh | bash`. See FEAT-003.
 
 ## Success Criteria
 
