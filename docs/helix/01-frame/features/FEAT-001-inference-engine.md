@@ -129,27 +129,24 @@ requirement captures the PRD P0 intent.]
 
 #### Optimization Techniques
 
-ENG-09. The engine supports DFlash speculative decoding on compatible
+ENG-09. The engine executes DFlash speculative decoding on compatible
 model+hardware combinations. Behavior and performance contract are specified in
-TD-001-dflash (to be written).
+TD-001-01-dflash.
 
-ENG-10. The engine supports PFlash speculative prefill on compatible
+ENG-10. The engine executes PFlash speculative prefill compression on compatible
 model+hardware combinations. On Qwen3.6-27B, PFlash achieves ≥5.6× prefill
 speedup over the non-speculative baseline on the RTX 3090 reference hardware.
-Behavior and performance contract are specified in TD-002-pflash (to be
-written).
+Behavior and performance contract are specified in TD-001-02-pflash.
 
-ENG-11. The engine supports DDTree speculative decoding on compatible
-model+hardware combinations. On Qwen3.6-27B, DDTree achieves ≥4.84× decoding
-speedup over the non-speculative baseline on the RTX 3090 reference hardware.
-Behavior and performance contract are specified in TD-003-ddtree (to be
-written).
+ENG-11. The engine executes DDTree tree-verification speculative decoding on
+compatible model+hardware combinations. On Qwen3.6-27B, DDTree achieves ≥4.84×
+decoding speedup over the non-speculative baseline on the RTX 3090 reference
+hardware. Behavior and performance contract are specified in TD-001-03-ddtree.
 
-ENG-12. The engine supports a Megakernel execution path for hybrid MoE
+ENG-12. The engine executes a Megakernel fused-dispatch path for hybrid MoE
 architectures (including Gemma-4-26B-A4B and Gemma-4-31B). The Megakernel path
 is automatically selected when the loaded model architecture is a Gemma-style
-MoE hybrid. Behavior and design are specified in TD-004-megakernel (to be
-written).
+MoE hybrid.
 
 ENG-13. When an optimization technique is not applicable to the active
 model+hardware combination, the engine falls back to the baseline execution path
@@ -291,10 +288,10 @@ FEAT-002.
 
 - **Other features**: FEAT-002 (Inference Server) is the sole consumer of the
   engine's public interface. The engine has no other callers.
-- **Technical designs**: TD-001-dflash, TD-002-pflash, TD-003-ddtree,
-  TD-004-megakernel (all to be written) govern the design and acceptance
-  criteria of the four optimization techniques. Hardware profile TDs (one per
-  validated profile, to be written) govern kernel dispatch per profile.
+- **Technical designs**: TD-001-01-dflash, TD-001-02-pflash, TD-001-03-ddtree
+  govern the design and acceptance criteria of the three primary optimization
+  techniques. Hardware profile TDs (one per validated profile, to be written)
+  govern kernel dispatch per profile.
 - **PRD requirements**: FEAT-001 (Inference Engine) — throughput target, 128K context window, multi-GPU layer split, all four optimization techniques.
 - **External**: CUDA 12.x on NVIDIA hardware; HIP 7 on AMD hardware. The engine
   does not depend on any higher-level inference library at the kernel dispatch
