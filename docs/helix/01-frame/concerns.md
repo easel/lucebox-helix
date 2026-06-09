@@ -38,7 +38,7 @@ are not principles, requirements, ADRs, test plans, or implementation tasks.
 
 | Slot | Chosen Filler | Source |
 |------|--------------|--------|
-| `frontend-framework` | TBD — SPA (SvelteKit static or Svelte+Vite is the leading candidate) | ADR-004 pending; shipped default (`react-nextjs`) rejected — no Node.js server process in v2 architecture |
+| `frontend-framework` | TBD — SPA (SvelteKit static or Svelte+Vite is the leading candidate) | ADR-004 pending; no Node.js server process in v2 architecture |
 | `language-runtime` | `python-uv` (v1 CLI/harness); C++17 (inference engine) | ADR-002 — shipped default (`typescript-bun`) was boilerplate, not intentional |
 | `e2e-framework` | `e2e-playwright` | shipped default |
 | `auth-provider` | `auth-local-sessions` | shipped default |
