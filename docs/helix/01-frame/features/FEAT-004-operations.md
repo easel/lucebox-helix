@@ -42,7 +42,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 | Server Lifecycle | Is the server running? How do I start or stop it? | Start, stop, and restart the inference server container; surface server status |
 | Model Management | Which models do I have? How do I add, remove, or switch the active model? | Download, list, remove, and activate GGUF models; auto-select quantization at download time |
 | Observability | How is the system performing right now? | Expose tokens/sec, VRAM usage, and queue depth via CLI from the inference server's `/props` endpoint |
-| Benchmarking and Verification | Is the system behaving correctly? What throughput am I getting? | Smoke-test the API endpoint; run a throughput benchmark; capture a performance profile snapshot |
+| Benchmarking and Verification | Is the system behaving correctly? What throughput am I getting? | Smoke-test the API endpoint (`lucebox smoke`); run a luce-bench throughput profile snapshot (`lucebox profile`) |
 | Configuration Management | How do I read or change a config value? | Get, set, and unset values in config.toml via dotted-key notation; surface the active config layer |
 | Updates | How do I get the latest server image or CLI version? | Pull a new Docker image; update the lucebox Python package |
 
@@ -62,7 +62,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 - **MDL-01**. Models are downloaded from the Lucebox-maintained registry on demand and placed in the configured models directory.
 - **MDL-02**. At download time, the system selects the highest-fidelity quantization that fits within the available VRAM plus system RAM without user input; the selected quantization is displayed in the download confirmation and in the model list.
 - **MDL-03**. Model download reports a structured error when available VRAM plus RAM is insufficient for any supported quantization of the requested model.
-- **MDL-04**. The model list operation lists every installed model with its name, selected quantization, and disk usage; output is human-readable and machine-parseable (JSON flag supported).
+- **MDL-04**. The model list operation lists every installed model with its name, selected quantization, and disk usage; output is human-readable.
 - **MDL-05**. Model removal deletes the named model and all associated files; disk space is freed and the model no longer appears in the model list.
 - **MDL-06**. Model removal reports a structured error when the named model is currently active and removal is not forced.
 - **MDL-07**. Model activation switches the inference server to serve the named model; the switch completes without restarting the server process.
@@ -74,15 +74,15 @@ An operator managing a Lucebox deployment performs any routine task without cons
 - **OBS-01**. The status operation reports current tokens/sec, VRAM usage, and queue depth sourced from the inference server's `/props` endpoint.
 - **OBS-02**. The status operation reports a structured error when the server is not reachable, distinguishing "server not started" from "server unreachable".
 - **OBS-03**. Status output includes the name and quantization of the currently active model.
-- **OBS-04**. All observability output is machine-parseable (JSON flag supported).
+- **OBS-04**. Status output is human-readable. Machine-parseable output is not implemented in the current CLI; see TD-005 open questions.
 
 #### Benchmarking and Verification
 
 - **BNV-01**. The smoke test operation sends a minimal completion request to the configured local endpoint and exits 0 on a valid response or exits non-zero with a structured error on any failure.
 - **BNV-02**. The profile capture operation records a benchmark snapshot via luce-bench integration and writes the result to a timestamped output file in the configured output directory.
-- **BNV-03**. The throughput benchmark operation runs reproducibly against the active model on the running server and reports sustained tokens/sec.
-- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, the throughput benchmark reports ≥120 tok/s sustained.
-- **BNV-05**. Throughput benchmark output includes the model name, quantization, hardware profile identifier, and timestamp so results are comparable across runs.
+- **BNV-03**. The profile operation (`lucebox profile`) runs reproducibly against the active model on the running server via luce-bench and reports sustained tokens/sec.
+- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, `lucebox profile` reports ≥120 tok/s sustained.
+- **BNV-05**. Profile output includes the model name, quantization, hardware profile identifier, and timestamp so results are comparable across runs.
 
 #### Configuration Management
 
@@ -108,7 +108,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 - **Performance — smoke test**: The smoke test operation completes within 10 seconds on a healthy server.
 - **Reliability — idempotency**: Server start, model download, and container image pull are idempotent; re-invoking them in the same state produces the same result and exits 0.
 - **Reliability — exit codes**: All operations exit 0 on success and exit non-zero on any error; the exit code is distinct between "resource not found" (exit 1) and "server not reachable" (exit 2).
-- **Observability — machine-readable output**: Status, model list, and throughput benchmark operations support a `--json` flag; JSON output is stable across patch releases.
+- **Observability — output format**: Status and model list output is human-readable. Machine-parseable (`--json`) output is not yet implemented.
 - **Security**: The configuration write operation writes only to config.toml in the lucebox data directory; it does not write to system files, environment files, or files outside the lucebox data directory.
 
 ## User Stories
@@ -137,7 +137,7 @@ An operator managing a Lucebox deployment performs any routine task without cons
 
 - The server start operation reaches healthy state within 30 seconds on reference hardware across 10 consecutive cold starts (zero failures).
 - Model activation completes an active model switch on a server with 10 in-flight requests without dropping any request (all requests return a valid response or well-formed error).
-- The throughput benchmark on reference hardware with Qwen3.6-27B Q4_K_M reports ≥120 tok/s sustained in 5 consecutive runs with ≤5% variance between runs.
+- `lucebox profile` on reference hardware with Qwen3.6-27B Q4_K_M reports ≥120 tok/s sustained in 5 consecutive runs with ≤5% variance between runs.
 - The smoke test exits 0 on a healthy server 100% of the time across the reference hardware test matrix.
 - All operations exit non-zero and print a structured error message (not a raw Python traceback) for every documented error condition.
 

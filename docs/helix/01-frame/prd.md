@@ -56,7 +56,7 @@ not performance on specific hardware.
 
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
-| Inference throughput (Qwen3.6-27B Q4_K_M, single-request, launch HW) | ≥120 tok/s sustained | `lucebox bench` output on reference machine |
+| Inference throughput (Qwen3.6-27B Q4_K_M, single-request, launch HW) | ≥120 tok/s sustained | `lucebox profile` output on reference machine |
 | Time to first harness-routed inference (fresh Linux install, CLI path) | ≤15 minutes | Timed setup walkthrough on reference machine |
 | Compatibility check accuracy on unsupported hardware | ≥80% diagnose specific deficiency | Manual test matrix across known-incompatible configs |
 | NPS (active users, 90-day survey) | ≥50 | Monthly survey |
@@ -133,7 +133,7 @@ rejection forces a search for an on-premise alternative.
 5. `lucebox check` reports host compatibility and specific deficiencies before install. *(FEAT-003)*
 6. Software installs on any compatible Linux hardware via a single bootstrap command. *(FEAT-003)*
 7. Model download, list, remove, and activate via CLI with automatic quantization selection. *(FEAT-004)*
-8. `lucebox bench` produces reproducible throughput benchmarks on reference hardware. *(FEAT-004)*
+8. `lucebox profile` produces reproducible throughput benchmarks on reference hardware. *(FEAT-004)*
 9. Anthropic Messages API-compatible endpoint for claude-code harness compatibility. *(FEAT-002, FEAT-005)*
 10. Harness adapters for claude-code, codex, opencode, hermes-agent, pi, and openclaw route to the local endpoint. *(FEAT-005)*
 
@@ -194,7 +194,7 @@ Harness adapters route claude-code, codex, opencode, hermes-agent, pi, and openc
 - **Deployment**: Inference server runs in a Docker container (`ghcr.io/luce-org/lucebox-hub:cuda12`); `lucebox.sh` manages container lifecycle; systemd manages the Docker daemon and `lucebox.service`. See ADR-003.
 - **Platform Targets**: Linux x86_64 at launch; kernel ≥5.15; CUDA 12.x for RTX 3090; AMD ROCm / AMDGPU for Strix Halo iGPU.
 - **Hardware Profiles**: Strix Halo (AMD Ryzen AI MAX+ 395, 128GB LPDDR5X) + RTX 3090 (24GB GDDR6X) — single launch profile.
-- **Model Format**: GGUF. Any GGUF-compatible model installs via `lucebox model download` or manual placement.
+- **Model Format**: GGUF. Any GGUF-compatible model installs via `lucebox models download` or manual placement.
 
 Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 (Docker deployment). Command surfaces and API contracts are specified in Technical Design documents under `docs/helix/02-design/`.
 
@@ -240,6 +240,6 @@ Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 
 ## Success Criteria
 
 - A developer on a fresh Linux install with Strix Halo + RTX 3090 hardware runs `lucebox check` (all checks pass), installs Lucebox, downloads Qwen3.6-27B, and routes at least one agentic coding harness to local inference — all within 15 minutes.
-- `lucebox bench` on the reference hardware reports ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M before the first hardware batch ships.
+- `lucebox profile` on the reference hardware reports ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M before the first hardware batch ships.
 - `lucebox check` on a machine with known-incompatible hardware (e.g., 8GB VRAM GPU) names the specific failing check with a link to a fix.
 - Zero harness adapters require a cloud API key to function against the local Lucebox endpoint.
