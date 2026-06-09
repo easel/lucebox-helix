@@ -16,12 +16,14 @@ ddx:
 
 Lucebox is a local AI inference product shipping in two integrated parts: a
 build-to-order desktop box (Strix Halo + RTX 3090) and a software stack that
-installs on any compatible Linux hardware. The v1 software is CLI-first — a
-tuned inference server with model management and harness adapters that route
-popular agentic coding tools (claude-code, codex, opencode, hermes-agent,
-pi, openclaw) to the local endpoint. This eliminates cloud API dependency and
-removes setup churn for the technical users who already run local LLMs but
-can't get reliable performance from generic stacks.
+installs on any compatible Linux hardware. The software is organized into five
+features: an inference engine (C++17, GPU-optimized kernels), an inference
+server (OpenAI-compatible HTTP API), installation and tuning (host check,
+Docker setup, autotune), operations (model management, benchmarking, metrics),
+and users (harness adapters routing claude-code, codex, opencode, hermes-agent,
+pi, and openclaw to the local endpoint). This eliminates cloud API dependency
+and removes setup churn for technical users who can't get reliable performance
+from generic stacks.
 
 **Top 3 success metrics:** ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on the
 launch hardware profile; ≤15 minutes from hardware boot to first harness-routed
@@ -61,8 +63,8 @@ not performance on specific hardware.
 
 ### Non-Goals
 
-- Web management UI at `lucebox.local` — deferred to v2.
-- Custom agentic harness / fork — deferred to v3.
+- Web management UI at `lucebox.local` — deferred.
+- Custom agentic harness / fork — deferred.
 - Subscription model and curated model library — post hardware launch.
 - Multi-box clustering or distributed inference.
 - Windows and macOS support at launch.
@@ -125,75 +127,83 @@ rejection forces a search for an on-premise alternative.
 
 ### Must Have (P0)
 
-1. Inference server runs Qwen3.6-27B at ≥120 tok/s sustained on Strix Halo + RTX 3090.
-2. OpenAI-compatible API exposed on localhost (completions, chat, models endpoints).
-3. Model pull, list, and delete via CLI with automatic quantization selection.
-4. `lucebox check` reports hardware compatibility and specific deficiencies.
-5. Harness adapters for claude-code, codex, opencode, hermes-agent, pi, and openclaw route to the local endpoint.
-6. Software installs on any compatible Linux hardware (not locked to Lucebox boxes).
+1. Inference engine with DFlash, DDTree, PFlash, and Megakernel optimizations running on all validated GPU profiles. *(FEAT-001)*
+2. ≥120 tok/s sustained on Qwen3.6-27B Q4_K_M on the Strix Halo + RTX 3090 reference hardware. *(FEAT-001)*
+3. Multi-GPU layer split across Strix Halo iGPU and RTX 3090 — required for full performance on reference hardware. *(FEAT-001)*
+4. OpenAI-compatible API exposed on localhost (completions, chat, models endpoints). *(FEAT-002)*
+5. `lucebox check` reports host compatibility and specific deficiencies before install. *(FEAT-003)*
+6. Software installs on any compatible Linux hardware via a single bootstrap command. *(FEAT-003)*
+7. Model download, list, remove, and activate via CLI with automatic quantization selection. *(FEAT-004)*
+8. `lucebox bench` produces reproducible throughput benchmarks on reference hardware. *(FEAT-004)*
+9. Anthropic Messages API-compatible endpoint for claude-code harness compatibility. *(FEAT-002, FEAT-005)*
+10. Harness adapters for claude-code, codex, opencode, hermes-agent, pi, and openclaw route to the local endpoint. *(FEAT-005)*
 
 ### Should Have (P1)
 
-1. Anthropic Messages API-compatible endpoint for Claude harness compatibility.
-2. 128K context window support on Qwen3.6-27B.
-3. Active model switching via CLI without server restart.
-4. Hardware status and inference metrics via CLI (tokens/sec, VRAM usage, queue depth).
-5. Inference server container starts on boot via a `lucebox.service` systemd unit managed by `lucebox.sh`.
+1. `lucebox autotune` selects optimal quantization and draft configuration for the installed hardware. *(FEAT-003)*
+3. Inference server container starts on boot via a `lucebox.service` systemd unit. *(FEAT-003)*
+4. Active model switching via CLI without server restart. *(FEAT-004)*
+5. Inference metrics visible via CLI (tokens/sec, VRAM usage, queue depth). *(FEAT-004)*
+6. 128K+ context window on Qwen3.6-27B on the reference hardware profile. *(FEAT-001)*
 
 ### Nice to Have (P2)
 
-1. DFlash speculative decoding for higher peak throughput.
-2. Multiple concurrent models (memory-permitting).
-3. `lucebox bench` command for reproducible throughput benchmarks.
-4. Shell completions for the `lucebox` CLI.
+1. Multiple concurrent models loaded simultaneously (memory-permitting). *(FEAT-002)*
+2. Shell completions for the `lucebox` CLI. *(FEAT-004)*
 
 ## Functional Requirements
 
-### Subsystem: Inference Server
+### Subsystem: Inference Engine (FEAT-001)
 
-- **FR-1** — `lucebox serve` starts the inference server container and listens on a configurable local port; exits cleanly on SIGTERM.
-- **FR-2** — Inference throughput on Qwen3.6-27B Q4_K_M on the Strix Halo + RTX 3090 profile reaches ≥120 tok/s sustained on single-request load.
-- **FR-3** — Server exposes `/v1/completions`, `/v1/chat/completions`, and `/v1/models` endpoints conforming to OpenAI API schema v1.
-- **FR-4** — Server handles context windows up to 128K tokens for Qwen3.6-27B without OOM on the launch hardware profile.
-- **FR-5** — Excess inference requests are queued (not dropped); queue depth is visible via CLI.
+- **FR-1** — The inference engine achieves ≥120 tok/s sustained throughput on Qwen3.6-27B Q4_K_M on the Strix Halo + RTX 3090 reference hardware under single-request load.
+- **FR-2** — The engine supports speculative decoding on the decode path, speculative compression on the prefill path, and fused kernel dispatch for hybrid models.
+- **FR-3** — The engine splits model layers across multiple GPU contexts, utilizing both the Strix Halo iGPU and the RTX 3090 discrete GPU on the reference hardware.
+- **FR-4** — The engine supports context windows up to 128K tokens for Qwen3.6-27B on the reference hardware profile without running out of memory.
+- **FR-5** — Validated hardware profiles include RTX 3090 (reference), RTX 5090, RTX 4090, RTX 2080 Ti, Strix Halo HIP, and RX 7900 XTX.
 
-### Subsystem: Model Management
+### Subsystem: Inference Server (FEAT-002)
 
-- **FR-6** — `lucebox model download <model>` downloads the named model from the Lucebox-maintained registry.
-- **FR-7** — At download time, the server selects the highest-fidelity quantization that fits in available VRAM + RAM without user input.
-- **FR-8** — `lucebox model list` lists installed models, their quantization, and disk usage.
-- **FR-9** — `lucebox model remove <model>` removes a model and frees its storage.
-- **FR-10** — `lucebox model activate <model>` switches the active model; in-flight requests complete on the prior model without interruption.
+- **FR-6** — The server exposes an OpenAI-compatible API (completions, chat completions, and model listing) on a configurable local port.
+- **FR-7** — The server exposes an Anthropic Messages API-compatible endpoint enabling Claude Code to route to the local server without reconfiguration.
+- **FR-8** — The server exposes a capabilities endpoint reporting active configuration, supported features, and real-time metrics.
+- **FR-9** — Requests exceeding current capacity are queued rather than dropped; queue depth is observable.
+- **FR-10** — The server starts and stops cleanly under process lifecycle management.
 
-### Subsystem: Hardware Compatibility
+### Subsystem: Installation and Tuning (FEAT-003)
 
-- **FR-11** — `lucebox check` runs before installation and reports pass/fail for each requirement: Docker daemon reachable, NVIDIA driver ≥r525, NVIDIA Container Toolkit registered, GPU VRAM adequate, system RAM adequate, systemd present.
-- **FR-12** — Each failed check names the specific deficiency and links to a documented fix (driver install, CTK registration, or a statement that the hardware is not supported).
-- **FR-13** — On the Strix Halo + RTX 3090 reference profile, all checks pass and throughput estimates are printed.
+- **FR-11** — Host compatibility is checked before any install step and reports pass/fail for each requirement: container runtime, GPU driver version, container toolkit registration, available VRAM, available RAM, and init system.
+- **FR-12** — Each failing check identifies the specific deficiency and provides a documented remediation path.
+- **FR-13** — On the reference hardware profile, all checks pass and expected throughput is reported.
+- **FR-14** — Installation on a passing host completes in three or fewer operator actions.
+- **FR-15** — The software installs on any compatible Linux x86_64 host; it is not locked to Lucebox-branded hardware.
+- **FR-16** — The inference server starts automatically on boot via a managed system service.
+- **FR-17** — An automated tuning pass selects the optimal quantization level, draft model, and context window size for the installed hardware and writes the result to persistent configuration.
 
-### Subsystem: Agentic Harness Wrappers
+### Subsystem: Operations (FEAT-004)
 
-- **FR-14** — Each harness adapter is a `lucebox` subcommand (`lucebox claude-code`, `lucebox codex`, `lucebox opencode`, `lucebox hermes-agent`, `lucebox pi`, `lucebox openclaw`) that configures and execs the real client binary pointed at the local inference endpoint.
-- **FR-15** — Harness adapters require no cloud API key; the local endpoint accepts the default key `sk-lucebox`.
-- **FR-16** — The `claude-code` adapter exposes an Anthropic Messages API-compatible endpoint so the Claude Code CLI routes without code changes.
-- **FR-17** — Harness adapters are stateless; invoking them multiple times does not corrupt the underlying client tool's configuration.
+- **FR-18** — Models are downloaded from a curated registry; the highest-fidelity quantization that fits in available memory is selected automatically.
+- **FR-19** — Installed models can be listed with their quantization level and storage footprint.
+- **FR-20** — Models can be removed, freeing their storage.
+- **FR-21** — The active model can be switched without restarting the server; requests in flight complete against the prior model.
+- **FR-22** — Reproducible throughput benchmarks can be produced for any installed model on the current hardware.
 
-### Subsystem: Software Distribution
+### Subsystem: Users (FEAT-005)
 
-- **FR-18** — Lucebox software installs on Linux x86_64 systems that pass `lucebox check`; it is not hardware-locked to Lucebox-branded machines.
-- **FR-19** — Installation from a clean OS completes in ≤3 commands: `curl -fsSL https://raw.githubusercontent.com/Luce-Org/lucebox-hub/main/install.sh | bash` bootstraps `lucebox.sh` and the `lucebox` Python package.
-- **FR-20** — A `lucebox.service` systemd unit starts the inference container on boot; `lucebox.sh` manages the Docker container lifecycle.
+- **FR-23** — Harness adapters route claude-code, codex, opencode, hermes-agent, pi, and openclaw to the local inference endpoint with no cloud API key required.
+- **FR-24** — The claude-code adapter is compatible with the Anthropic Messages API so Claude Code routes without reconfiguration.
+- **FR-25** — Adapter invocations are stateless and do not modify the underlying tool's persistent configuration.
 
 ## Acceptance Test Sketches
 
-| Requirement | Scenario | Input | Expected Output |
-|-------------|----------|-------|-----------------|
-| FR-2 | Throughput on reference hardware | `lucebox bench qwen3.6-27b` on Strix Halo + RTX 3090 | ≥120 tok/s reported |
-| FR-3 | OpenAI API surface | `curl localhost:<port>/v1/models` after `lucebox serve` | JSON array listing active model |
-| FR-7 | Auto-quantization | `lucebox model download qwen3.6-27b` on machine with 24GB VRAM + 128GB RAM | Q4_K_M selected automatically; confirmed in `lucebox model list` |
-| FR-11 | Compatibility check failure | `lucebox check` on machine with RTX 2060 8GB | "GPU VRAM insufficient: 8 GB found, 24 GB required" |
-| FR-14 | Harness adapter invocation | `lucebox claude-code "explain this code"` | Completion served from local Lucebox server, no API key prompt |
-| FR-16 | Anthropic endpoint compat | Anthropic Messages API POST to local endpoint | Valid response in Anthropic response schema |
+| Requirement | Scenario | Condition | Expected Outcome |
+|-------------|----------|-----------|-----------------|
+| FR-1 | Throughput on reference hardware | Benchmark run on Strix Halo + RTX 3090 with Qwen3.6-27B Q4_K_M | ≥120 tok/s sustained reported |
+| FR-6 | OpenAI API surface | Model listing request to running server | Valid JSON array of available models returned |
+| FR-7 | Anthropic API compat | Anthropic Messages API request to running server | Valid response conforming to Anthropic response schema |
+| FR-11 | Compatibility check — passing | Host check run on reference hardware | All checks pass; throughput estimate printed |
+| FR-11 | Compatibility check — failing | Host check run on host with 8GB VRAM GPU | VRAM check fails with specific deficiency message and remediation link |
+| FR-18 | Auto-quantization on download | Model downloaded on host with 24GB VRAM and 128GB RAM | Q4_K_M selected automatically without user input |
+| FR-23 | Harness adapter — no API key | Coding tool launched via harness adapter | Completion served from local server; no cloud API key prompted |
 
 ## Technical Context
 
@@ -205,7 +215,7 @@ rejection forces a search for an on-premise alternative.
 - **Hardware Profiles**: Strix Halo (AMD Ryzen AI MAX+ 395, 128GB LPDDR5X) + RTX 3090 (24GB GDDR6X) — single launch profile.
 - **Model Format**: GGUF. Any GGUF-compatible model installs via `lucebox model download` or manual placement.
 
-Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 (Docker deployment).
+Stack selection rationale: ADR-001 (license), ADR-002 (language stack), ADR-003 (Docker deployment). Command surfaces and API contracts are specified in Technical Design documents under `docs/helix/02-design/`.
 
 ## Constraints, Assumptions, Dependencies
 

@@ -41,8 +41,8 @@ same error shapes — at ≥120 tok/s sustained throughput on Qwen3.6-27B Q4_K_M
 
 The Claude Code CLI routes to the same box without any modification to the
 claude binary: the server speaks the Anthropic Messages API on a dedicated
-endpoint, and the `lucebox claude-code` harness adapter (FEAT-005) sets the
-right environment variables.
+endpoint, and the claude-code harness adapter (FEAT-005) sets the right
+environment variables.
 
 The server starts on boot, survives container restarts, never drops a request
 under normal load, and publishes its capabilities through a machine-readable
@@ -84,7 +84,8 @@ feature availability without out-of-band documentation.
 #### Server Process
 
 **SRV-01**. The server runs inside the `ghcr.io/luce-org/lucebox-hub:cuda12`
-Docker container, started and stopped by `lucebox serve` (FEAT-004).
+Docker container, started and stopped by the server lifecycle management
+capability (FEAT-004).
 
 **SRV-02**. The server binds to the port specified by `LUCEBOX_PORT`; when
 unset, a documented default port is used.
@@ -251,7 +252,8 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
 - The server is not responsible for model loading, quantization selection, or
   VRAM management — those are FEAT-001 concerns.
 - The server does not manage the Docker container lifecycle — that is owned by
-  `lucebox serve` (FEAT-004) and `lucebox.sh`.
+  the server lifecycle management capability (FEAT-004) and the shell wrapper
+  script.
 - `LUCEBOX_IMAGE` and `LUCEBOX_VARIANT` are consumed by the server as read-only
   values set by the installation subsystem (FEAT-003); the server does not pull
   or switch Docker images.
@@ -273,9 +275,9 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
   inference requests without a running engine instance.
 - **FEAT-003 — Installation**: `LUCEBOX_IMAGE` and `LUCEBOX_VARIANT` values are
   set by the installation subsystem; the server reads but does not manage them.
-- **FEAT-004 — CLI**: `lucebox serve` starts the server process. Queue depth
-  observability via CLI is a FEAT-004 responsibility that depends on the
-  `/props` contract defined here.
+- **FEAT-004 — Operations**: The server lifecycle management capability starts
+  the server process. Queue depth observability via CLI is a FEAT-004
+  responsibility that depends on the `/props` contract defined here.
 - **Docker runtime**: `ghcr.io/luce-org/lucebox-hub:cuda12` must be present
   on the host; the server runs exclusively inside this container.
 - **OpenAI API schema v1**: The server's primary protocol contract. Changes to
@@ -288,9 +290,9 @@ variable; the server rejects requests carrying an unrecognized key with HTTP
 
 - **Inference engine internals** (kernel dispatch, quantization, VRAM
   management, GGUF loading) — FEAT-001.
-- **CLI commands** (`lucebox serve`, `lucebox status`, `lucebox model`) —
+- **Runtime operations** (server lifecycle, status, model management) —
   FEAT-004.
-- **Installation and image management** (`lucebox.sh`, systemd unit, Docker
+- **Installation and image management** (shell wrapper, systemd unit, Docker
   image pull) — FEAT-003.
 - **Agentic harness adapters** (environment variable injection for claude-code,
   codex, opencode, etc.) — FEAT-005.

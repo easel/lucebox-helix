@@ -27,13 +27,13 @@ FEAT-004 defines the day-to-day runtime management surface of a running Lucebox 
 
 ## Ideal Future State
 
-An operator managing a Lucebox deployment issues a small set of `lucebox` subcommands to perform any routine task without consulting documentation. Starting the server, switching models, checking throughput, and updating software are each single-command actions with clear, machine-readable output. Model selection is automatic — the system chooses the best-fit quantization without prompting. Metrics are visible at any time from the CLI. Configuration changes are explicit and discoverable through a consistent dotted-key interface. The operator has confidence that the system is healthy because smoke tests and benchmarks are reproducible and exit with a clear pass or fail.
+An operator managing a Lucebox deployment performs any routine task without consulting documentation. Starting the server, switching models, checking throughput, and updating software are each single-action operations with clear, machine-readable output. Model selection is automatic — the system chooses the best-fit quantization without prompting. Metrics are visible at any time from the CLI. Configuration changes are explicit and discoverable through a consistent dotted-key interface. The operator has confidence that the system is healthy because smoke tests and benchmarks are reproducible and exit with a clear pass or fail.
 
 ## Problem Statement
 
-- **Current situation**: Lucebox ships a working inference server and model management tooling, but the operational surface — how an operator starts/stops the server, manages models across sessions, checks system health, and updates software — is not governed by a single coherent feature spec. Individual commands exist but their contracts, error behaviors, and interactions are not formally specified.
-- **Pain points**: Without a governed operational surface, operators encounter undocumented failure modes (e.g., model switch behavior under load, VRAM overcommit during download), inconsistent CLI output formats across subcommands, and no authoritative reference for what the update path looks like.
-- **Desired outcome**: Every operator action listed in this spec has a documented command, a defined success output, and a defined error output. Operators on the reference hardware can complete any routine operational task — including a model switch under load — without ambiguity.
+- **Current situation**: Lucebox ships a working inference server and model management tooling, but the operational surface — how an operator starts/stops the server, manages models across sessions, checks system health, and updates software — is not governed by a single coherent feature spec. Individual operations exist but their contracts, error behaviors, and interactions are not formally specified.
+- **Pain points**: Without a governed operational surface, operators encounter undocumented failure modes (e.g., model switch behavior under load, VRAM overcommit during download), inconsistent CLI output formats across operations, and no authoritative reference for what the update path looks like.
+- **Desired outcome**: Every operator action listed in this spec has a documented operation, a defined success output, and a defined error output. Operators on the reference hardware can complete any routine operational task — including a model switch under load — without ambiguity.
 
 ## Functional Areas
 
@@ -52,71 +52,71 @@ An operator managing a Lucebox deployment issues a small set of `lucebox` subcom
 
 #### Server Lifecycle
 
-- **SRV-01**. `lucebox serve` starts the inference server container and the server is reachable on the configured local port within 30 seconds on reference hardware.
-- **SRV-02**. `lucebox serve` is idempotent: if the container is already running, the command reports the running state and exits without error.
+- **SRV-01**. The inference server container is started by the server lifecycle operation and the server is reachable on the configured local port within 30 seconds on reference hardware.
+- **SRV-02**. Starting the server is idempotent: if the container is already running, the operation reports the running state and exits without error.
 - **SRV-03**. The server container stops cleanly on SIGTERM; in-flight requests receive a response or a well-formed error before the process exits.
-- **SRV-04**. `lucebox serve` reports a structured error with a specific cause when the container fails to start (port conflict, Docker daemon not reachable, missing model).
+- **SRV-04**. The server start operation reports a structured error with a specific cause when the container fails to start (port conflict, Docker daemon not reachable, missing model).
 
 #### Model Management
 
-- **MDL-01**. `lucebox model download <model>` downloads the named GGUF model from the Lucebox-maintained registry and places it in the configured models directory.
-- **MDL-02**. At download time, the system selects the highest-fidelity quantization that fits within the available VRAM plus system RAM without user input; the selected quantization is displayed in the download confirmation and in `lucebox model list`.
-- **MDL-03**. `lucebox model download` reports a structured error when available VRAM plus RAM is insufficient for any supported quantization of the requested model.
-- **MDL-04**. `lucebox model list` lists every installed model with its name, selected quantization, and disk usage; output is human-readable and machine-parseable (JSON flag supported).
-- **MDL-05**. `lucebox model remove <model>` removes the named model and all associated files; disk space is freed and the model no longer appears in `lucebox model list`.
-- **MDL-06**. `lucebox model remove` reports a structured error when the named model is currently active and the `--force` flag is not passed.
-- **MDL-07**. `lucebox model activate <model>` switches the inference server to serve the named model; the switch completes without restarting the server process.
+- **MDL-01**. Models are downloaded from the Lucebox-maintained registry on demand and placed in the configured models directory.
+- **MDL-02**. At download time, the system selects the highest-fidelity quantization that fits within the available VRAM plus system RAM without user input; the selected quantization is displayed in the download confirmation and in the model list.
+- **MDL-03**. Model download reports a structured error when available VRAM plus RAM is insufficient for any supported quantization of the requested model.
+- **MDL-04**. The model list operation lists every installed model with its name, selected quantization, and disk usage; output is human-readable and machine-parseable (JSON flag supported).
+- **MDL-05**. Model removal deletes the named model and all associated files; disk space is freed and the model no longer appears in the model list.
+- **MDL-06**. Model removal reports a structured error when the named model is currently active and removal is not forced.
+- **MDL-07**. Model activation switches the inference server to serve the named model; the switch completes without restarting the server process.
 - **MDL-08**. During an active model switch, in-flight requests on the prior model receive a complete response before the switch takes effect.
-- **MDL-09**. `lucebox model activate` reports a structured error when the named model is not installed or when the server is not running.
+- **MDL-09**. Model activation reports a structured error when the named model is not installed or when the server is not running.
 
 #### Observability
 
-- **OBS-01**. `lucebox status` reports current tokens/sec, VRAM usage, and queue depth sourced from the inference server's `/props` endpoint.
-- **OBS-02**. `lucebox status` reports a structured error when the server is not reachable, distinguishing "server not started" from "server unreachable".
-- **OBS-03**. `lucebox status` output includes the name and quantization of the currently active model.
+- **OBS-01**. The status operation reports current tokens/sec, VRAM usage, and queue depth sourced from the inference server's `/props` endpoint.
+- **OBS-02**. The status operation reports a structured error when the server is not reachable, distinguishing "server not started" from "server unreachable".
+- **OBS-03**. Status output includes the name and quantization of the currently active model.
 - **OBS-04**. All observability output is machine-parseable (JSON flag supported).
 
 #### Benchmarking and Verification
 
-- **BNV-01**. `lucebox smoke` sends a minimal completion request to the configured local endpoint and exits 0 on a valid response or exits non-zero with a structured error on any failure.
-- **BNV-02**. `lucebox profile` captures a benchmark snapshot via luce-bench integration and writes the result to a timestamped output file in the configured output directory.
-- **BNV-03**. `lucebox bench` runs a reproducible throughput benchmark against the active model on the running server and reports sustained tokens/sec.
-- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, `lucebox bench` reports ≥120 tok/s sustained.
-- **BNV-05**. `lucebox bench` output includes the model name, quantization, hardware profile identifier, and timestamp so results are comparable across runs.
+- **BNV-01**. The smoke test operation sends a minimal completion request to the configured local endpoint and exits 0 on a valid response or exits non-zero with a structured error on any failure.
+- **BNV-02**. The profile capture operation records a benchmark snapshot via luce-bench integration and writes the result to a timestamped output file in the configured output directory.
+- **BNV-03**. The throughput benchmark operation runs reproducibly against the active model on the running server and reports sustained tokens/sec.
+- **BNV-04**. On the Strix Halo + RTX 3090 reference hardware with Qwen3.6-27B Q4_K_M active, the throughput benchmark reports ≥120 tok/s sustained.
+- **BNV-05**. Throughput benchmark output includes the model name, quantization, hardware profile identifier, and timestamp so results are comparable across runs.
 
 #### Configuration Management
 
-- **CFG-01**. `lucebox config get <key>` returns the effective value for a dotted configuration key, reflecting the active layer: environment variable override, then config.toml, then dataclass default.
-- **CFG-02**. `lucebox config set <key> <value>` writes the value to config.toml; the change takes effect on the next server start without requiring a full reinstall.
-- **CFG-03**. `lucebox config unset <key>` removes the key from config.toml, reverting to the dataclass default on the next server start.
-- **CFG-04**. `lucebox config get` reports which config layer supplied the value (env var, config.toml, or default).
+- **CFG-01**. Reading a configuration key returns its effective value, reflecting the active layer: environment variable override, then config.toml, then dataclass default.
+- **CFG-02**. Setting a configuration key writes the value to config.toml; the change takes effect on the next server start without requiring a full reinstall.
+- **CFG-03**. Unsetting a configuration key removes it from config.toml, reverting to the dataclass default on the next server start.
+- **CFG-04**. Reading a configuration key reports which config layer supplied the value (env var, config.toml, or default).
 - **CFG-05**. The following environment variables are recognized and override their config.toml equivalents: `LUCEBOX_IMAGE`, `LUCEBOX_VARIANT`, `LUCEBOX_PORT`, `LUCEBOX_CONTAINER`, `LUCEBOX_MODELS`.
-- **CFG-06**. `lucebox config get <key>` reports a structured error for unrecognized keys.
+- **CFG-06**. Reading an unrecognized configuration key reports a structured error.
 
 #### Updates
 
-- **UPD-01**. `lucebox pull` pulls the latest Docker image for the configured `LUCEBOX_IMAGE` tag from the registry and reports the digest of the newly pulled image.
-- **UPD-02**. `lucebox pull` does not restart a running server; the operator must run `lucebox serve` after pulling to apply the update.
-- **UPD-03**. `lucebox pull` reports the current and new image digests so the operator can confirm a new version was fetched.
+- **UPD-01**. The container image update operation pulls the latest Docker image for the configured `LUCEBOX_IMAGE` tag from the registry and reports the digest of the newly pulled image.
+- **UPD-02**. Pulling a new image does not restart a running server; the operator must start the server again after pulling to apply the update.
+- **UPD-03**. The container image update operation reports the current and new image digests so the operator can confirm a new version was fetched.
 - **UPD-04**. The lucebox Python package is updatable via the standard package manager (uv or pip) without reinstalling the Docker image.
 
 ### Non-Functional Requirements
 
-- **Performance — server start**: `lucebox serve` reaches a healthy state (responds to `/v1/models`) within 30 seconds on the reference hardware profile.
-- **Performance — model switch**: `lucebox model activate` completes the active model switch (new model serving requests) within 60 seconds on the reference hardware profile.
-- **Performance — observability latency**: `lucebox status` returns within 2 seconds under normal server load.
-- **Performance — smoke test**: `lucebox smoke` completes within 10 seconds on a healthy server.
-- **Reliability — idempotency**: `lucebox serve`, `lucebox model download`, and `lucebox pull` are idempotent; re-invoking them in the same state produces the same result and exits 0.
-- **Reliability — exit codes**: All `lucebox` subcommands exit 0 on success and exit non-zero on any error; the exit code is distinct between "resource not found" (exit 1) and "server not reachable" (exit 2).
-- **Observability — machine-readable output**: `lucebox status`, `lucebox model list`, and `lucebox bench` support a `--json` flag; JSON output is stable across patch releases.
-- **Security**: `lucebox config set` writes only to config.toml in the lucebox data directory; it does not write to system files, environment files, or files outside the lucebox data directory.
+- **Performance — server start**: The server start operation reaches a healthy state (responds to `/v1/models`) within 30 seconds on the reference hardware profile.
+- **Performance — model switch**: Model activation completes the active model switch (new model serving requests) within 60 seconds on the reference hardware profile.
+- **Performance — observability latency**: The status operation returns within 2 seconds under normal server load.
+- **Performance — smoke test**: The smoke test operation completes within 10 seconds on a healthy server.
+- **Reliability — idempotency**: Server start, model download, and container image pull are idempotent; re-invoking them in the same state produces the same result and exits 0.
+- **Reliability — exit codes**: All operations exit 0 on success and exit non-zero on any error; the exit code is distinct between "resource not found" (exit 1) and "server not reachable" (exit 2).
+- **Observability — machine-readable output**: Status, model list, and throughput benchmark operations support a `--json` flag; JSON output is stable across patch releases.
+- **Security**: The configuration write operation writes only to config.toml in the lucebox data directory; it does not write to system files, environment files, or files outside the lucebox data directory.
 
 ## User Stories
 
-- [TODO: create story] — As Morgan, I want to start the inference server with a single command so that I can begin using my coding agent immediately after booting my machine.
+- [TODO: create story] — As Morgan, I want to start the inference server with a single action so that I can begin using my coding agent immediately after booting my machine.
 - [TODO: create story] — As Morgan, I want to download a new model without choosing a quantization manually so that I can get a working setup without understanding VRAM math.
 - [TODO: create story] — As Sam, I want to switch the active model without restarting the server so that I can compare models mid-session without losing my request queue.
-- [TODO: create story] — As Sam, I want to see current tokens/sec and VRAM usage from the CLI so that I can confirm the server is performing within expected bounds.
+- [TODO: create story] — As Sam, I want to see current tokens/sec and VRAM usage so that I can confirm the server is performing within expected bounds.
 - [TODO: create story] — As Sam, I want to run a reproducible throughput benchmark so that I can compare performance across software updates and model changes.
 - [TODO: create story] — As Jordan, I want to read and write configuration values through the CLI so that I do not need to manually edit config files or know their locations.
 - [TODO: create story] — As Jordan, I want to pull a new Docker image without the server restarting automatically so that I control when the update takes effect.
@@ -124,40 +124,40 @@ An operator managing a Lucebox deployment issues a small set of `lucebox` subcom
 
 ## Edge Cases and Error Handling
 
-- **Model activate while server is stopped**: `lucebox model activate` reports that the server is not running and exits non-zero; it does not silently update a config value without a running server to validate against.
-- **VRAM insufficient at download time**: `lucebox model download` reports the minimum VRAM required for the lowest available quantization, the VRAM detected, and the shortfall; it does not download a partial file.
-- **Port conflict on serve**: `lucebox serve` detects that the configured port is already bound, reports the conflicting process (if identifiable), and exits non-zero rather than silently using an alternate port.
-- **Active model removed with --force**: `lucebox model remove --force` on the active model stops the server, removes the model, and reports that the server must be restarted with a different active model; it does not leave the server in a partially degraded state.
-- **Config key set while server is running**: `lucebox config set` writes the value to config.toml and emits a warning that the running server will not reflect the change until the next `lucebox serve`.
-- **Pull when no new image is available**: `lucebox pull` exits 0 and reports "already at latest" with the current image digest; it does not treat an up-to-date state as an error.
-- **`lucebox status` when server is starting**: `lucebox status` distinguishes "server is starting" (container running, `/props` not yet responsive) from "server is not running" (container absent or exited).
-- **Model download interrupted**: A partially downloaded model does not appear in `lucebox model list`; the partial data is cleaned up automatically.
+- **Model activate while server is stopped**: Model activation reports that the server is not running and exits non-zero; it does not silently update a config value without a running server to validate against.
+- **VRAM insufficient at download time**: Model download reports the minimum VRAM required for the lowest available quantization, the VRAM detected, and the shortfall; it does not download a partial file.
+- **Port conflict on serve**: The server start operation detects that the configured port is already bound, reports the conflicting process (if identifiable), and exits non-zero rather than silently using an alternate port.
+- **Active model removed forcibly**: Forcibly removing the active model stops the server, removes the model, and reports that the server must be restarted with a different active model; it does not leave the server in a partially degraded state.
+- **Config key set while server is running**: Writing a configuration key writes the value to config.toml and emits a warning that the running server will not reflect the change until the next server start.
+- **Pull when no new image is available**: The container image pull exits 0 and reports "already at latest" with the current image digest; it does not treat an up-to-date state as an error.
+- **Status when server is starting**: The status operation distinguishes "server is starting" (container running, `/props` not yet responsive) from "server is not running" (container absent or exited).
+- **Model download interrupted**: A partially downloaded model does not appear in the model list; the partial data is cleaned up automatically.
 
 ## Success Metrics
 
-- `lucebox serve` reaches healthy state within 30 seconds on reference hardware across 10 consecutive cold starts (zero failures).
-- `lucebox model activate` completes an active model switch on a server with 10 in-flight requests without dropping any request (all requests return a valid response or well-formed error).
-- `lucebox bench` on reference hardware with Qwen3.6-27B Q4_K_M reports ≥120 tok/s sustained in 5 consecutive runs with ≤5% variance between runs.
-- `lucebox smoke` exits 0 on a healthy server 100% of the time across the reference hardware test matrix.
-- All `lucebox` subcommands exit non-zero and print a structured error message (not a raw Python traceback) for every documented error condition.
+- The server start operation reaches healthy state within 30 seconds on reference hardware across 10 consecutive cold starts (zero failures).
+- Model activation completes an active model switch on a server with 10 in-flight requests without dropping any request (all requests return a valid response or well-formed error).
+- The throughput benchmark on reference hardware with Qwen3.6-27B Q4_K_M reports ≥120 tok/s sustained in 5 consecutive runs with ≤5% variance between runs.
+- The smoke test exits 0 on a healthy server 100% of the time across the reference hardware test matrix.
+- All operations exit non-zero and print a structured error message (not a raw Python traceback) for every documented error condition.
 
 ## Constraints and Assumptions
 
 - All operations assume the inference server and Docker runtime are available as specified in FEAT-002 and FEAT-003.
-- `lucebox config` reads and writes only to config.toml in the lucebox data directory; it does not manage environment variables in the shell or in systemd unit files.
-- Model auto-quantization selection is based on VRAM and RAM reported at download time; VRAM changes after download (e.g., another process consuming VRAM) are not re-evaluated by the CLI.
-- `lucebox pull` requires network access to the Docker registry; air-gapped operation is not addressed in this feature.
+- Configuration management reads and writes only to config.toml in the lucebox data directory; it does not manage environment variables in the shell or in systemd unit files.
+- Model auto-quantization selection is based on VRAM and RAM reported at download time; VRAM changes after download (e.g., another process consuming VRAM) are not re-evaluated.
+- The container image pull requires network access to the Docker registry; air-gapped operation is not addressed in this feature.
 - The `/props` endpoint contract is defined in FEAT-002; this feature consumes it but does not define it.
 - Model switching without server restart requires inference server support for hot-swap; this capability is a FEAT-002 contract requirement, not implemented here.
-- `lucebox bench` results are reproducible only under controlled conditions (no concurrent inference load, fixed hardware power state); the spec does not guarantee reproducibility across hardware profiles.
+- Throughput benchmark results are reproducible only under controlled conditions (no concurrent inference load, fixed hardware power state); the spec does not guarantee reproducibility across hardware profiles.
 
 ## Dependencies
 
 - **FEAT-002**: Inference server must expose the `/props` endpoint (OBS-01, OBS-03) and support active model switching without restart (MDL-07, MDL-08).
 - **FEAT-003**: Installation and autotune must have completed successfully before any operation in this spec is valid.
-- **Docker daemon**: `lucebox serve`, `lucebox pull`, and server lifecycle operations require the Docker daemon to be running and the NVIDIA Container Toolkit to be registered.
-- **Lucebox model registry**: `lucebox model download` depends on the Lucebox-maintained GGUF registry being reachable (or a local mirror for air-gapped setups).
-- **luce-bench**: `lucebox profile` depends on the luce-bench integration being installed and callable.
+- **Docker daemon**: Server start, container image pull, and server lifecycle operations require the Docker daemon to be running and the NVIDIA Container Toolkit to be registered.
+- **Lucebox model registry**: Model download depends on the Lucebox-maintained GGUF registry being reachable (or a local mirror for air-gapped setups).
+- **luce-bench**: Profile capture depends on the luce-bench integration being installed and callable.
 
 ## Out of Scope
 
@@ -165,7 +165,7 @@ An operator managing a Lucebox deployment issues a small set of `lucebox` subcom
 - Inference server internals, kernel configuration, and VRAM allocation strategy — covered by FEAT-002.
 - Harness adapter configuration and agentic tool routing — covered by FEAT-005.
 - Web management UI — deferred to v2 per PRD Non-Goals.
-- Multi-model concurrent serving — addressed as a P2 PRD item; not a requirement of the operational CLI surface in this spec.
+- Multi-model concurrent serving — addressed as a P2 PRD item; not a requirement of the operational surface in this spec.
 - Air-gapped or offline model download — out of scope for v1.
 - Windows and macOS support — out of scope per PRD Constraints.
 - Fine-tuning, training, or model conversion operations — inference only in v1.

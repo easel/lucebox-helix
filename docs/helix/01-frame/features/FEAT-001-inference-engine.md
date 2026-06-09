@@ -223,13 +223,14 @@ FEAT-002.
 ## Success Metrics
 
 - Sustained throughput on Qwen3.6-27B Q4_K_M, RTX 3090 24GB, single-request:
-  ≥120 tok/s across a 1024-token generation. Measured by `lucebox bench`.
-- RTX 5090 throughput on Qwen3.6-27B Q4_K_M: ≥205 tok/s. Measured by
-  `lucebox bench`.
+  ≥120 tok/s across a 1024-token generation. Measured by the throughput
+  benchmark.
+- RTX 5090 throughput on Qwen3.6-27B Q4_K_M: ≥205 tok/s. Measured by the
+  throughput benchmark.
 - PFlash speedup on Qwen3.6-27B, RTX 3090 24GB: ≥5.6× prefill speedup vs.
-  baseline. Measured by `lucebox bench --compare-baseline`.
+  baseline. Measured by the throughput benchmark with baseline comparison.
 - DDTree speedup on Qwen3.6-27B, RTX 3090 24GB: ≥4.84× decoding speedup vs.
-  baseline. Measured by `lucebox bench --compare-baseline`.
+  baseline. Measured by the throughput benchmark with baseline comparison.
 - 128K context window on Qwen3.6-27B Q4_K_M, RTX 3090 24GB: generation
   completes without OOM. Verified by a dedicated context-window stress test.
 - Load time for Qwen3.6-27B Q4_K_M from warm disk: ≤30 seconds on RTX 3090
